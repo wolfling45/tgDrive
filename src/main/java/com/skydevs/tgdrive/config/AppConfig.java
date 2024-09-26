@@ -1,4 +1,4 @@
-package com.skydevs.tgdrive.Config;
+package com.skydevs.tgdrive.config;
 
 import lombok.Getter;
 import lombok.Setter;
