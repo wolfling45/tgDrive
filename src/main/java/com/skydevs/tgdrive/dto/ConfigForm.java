@@ -6,6 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ConfigForm {
+    private String name;
     private String token;
     private String target;
     private String mode;
