@@ -27,5 +27,14 @@ public interface BotService extends LongPollingSingleThreadUpdateConsumer, Sprin
     @Override
     public LongPollingUpdateConsumer getUpdatesConsumer();
 
-    public void uploadPhoto
+    /**
+     * 根据文件名设置botToken
+     * @param filename
+     */
+    void setBotToken(String filename);
+
+    /**
+     * 初始化telegram客户端
+     */
+    void initializeTelegramClientAsync();
 }
