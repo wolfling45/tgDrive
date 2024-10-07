@@ -3,20 +3,27 @@ package com.skydevs.tgdrive.service.impl;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import com.skydevs.tgdrive.config.AppConfig;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.BotSession;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
 import org.telegram.telegrambots.longpolling.starter.AfterBotRegistration;
+import org.telegram.telegrambots.longpolling.starter.TelegramBotStarterConfiguration;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 @Service
 public class BotServiceImpl implements BotService {
@@ -26,17 +33,36 @@ public class BotServiceImpl implements BotService {
     @Autowired
     private ConfigService configService;
     private String botToken;
+    private String chatId;
 
     @Autowired
     public BotServiceImpl(ConfigService configService) {
         this.configService = configService;
     }
 
-    public synchronized void setBotToken(String filename) {
-        this.botToken = getBotTokenFromConfig(filename);
+    public void setBotToken(String filename) {
+        try {
+            AppConfig appConfig = configService.get(filename);
+            botToken = appConfig.getToken();
+            chatId = appConfig.getTarget();
+        } catch (Exception e) {
+            logger.error("获取Bot Token失败: {}", e.getMessage());
+        }
     }
 
-    @Async
+    public void sendImageUploadingAFile(File file) {
+        InputFile inputFile = new InputFile(file);
+        // Create send method
+        SendPhoto sendPhotoRequest = new SendPhoto(chatId, inputFile);
+        try {
+            // Execute the method
+            telegramClient.execute(sendPhotoRequest);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public synchronized void initializeTelegramClientAsync() {
         if (this.botToken != null && !this.botToken.isEmpty()) {
             try {
@@ -52,15 +78,6 @@ public class BotServiceImpl implements BotService {
         }
     }
 
-    private String getBotTokenFromConfig(String filename) {
-        try {
-            AppConfig appConfig = configService.get(filename);
-            return appConfig.getToken();
-        } catch (Exception e) {
-            logger.error("获取Bot Token失败: {}", e.getMessage());
-            return null;
-        }
-    }
 
     @Override
     public void consume(Update update) {

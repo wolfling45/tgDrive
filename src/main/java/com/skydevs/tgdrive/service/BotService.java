@@ -7,6 +7,8 @@ import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import java.io.File;
+
 /**
  * 机器人服务类，用于初始化机器人和运行机器人相关服务
  */
@@ -37,4 +39,11 @@ public interface BotService extends LongPollingSingleThreadUpdateConsumer, Sprin
      * 初始化telegram客户端
      */
     void initializeTelegramClientAsync();
+
+
+    /**
+     * 上传文件
+     * @param file
+     */
+    public void sendImageUploadingAFile(File file);
 }
