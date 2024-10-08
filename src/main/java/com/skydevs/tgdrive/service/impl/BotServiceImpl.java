@@ -1,9 +1,12 @@
 package com.skydevs.tgdrive.service.impl;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.File;
 import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.request.GetFile;
 import com.pengrad.telegrambot.request.SendDocument;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.GetFileResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
@@ -12,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -24,11 +27,8 @@ public class BotServiceImpl implements BotService {
     private ConfigService configService;
     private String botToken;
     private String chatId;
+    private TelegramBot bot;
 
-    @Autowired
-    public BotServiceImpl(ConfigService configService) {
-        this.configService = configService;
-    }
 
     /**
      * 设置bot token
@@ -42,6 +42,7 @@ public class BotServiceImpl implements BotService {
         } catch (Exception e) {
             log.error("获取Bot Token失败: {}", e.getMessage());
         }
+        bot = new TelegramBot(botToken);
     }
 
 
@@ -57,7 +58,6 @@ public class BotServiceImpl implements BotService {
             byte[] fileBytes = multipartFile.getBytes();
 
             // 使用 Telegram Bot 直接发送字节数组
-            TelegramBot bot = new TelegramBot(botToken);
             SendDocument sendDocument = new SendDocument(chatId, fileBytes)
                     .fileName(multipartFile.getOriginalFilename());  // 设置文档的文件名为标题（可选）
 
@@ -73,6 +73,19 @@ public class BotServiceImpl implements BotService {
         }
 
         return null;
+    }
+
+
+    private String getDownloadPath(String fileID) {
+
+
+        // 获取文件下载路径
+        GetFile fileRequest = new GetFile(fileID);
+        GetFileResponse getFileResponse = bot.execute(fileRequest);
+        File file = getFileResponse.file();
+        String fullPath = bot.getFullFilePath(file);
+        log.info(fullPath);
+        log.info(file.filePath());
     }
 
     /**
