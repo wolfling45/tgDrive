@@ -1,5 +1,6 @@
 package com.skydevs.tgdrive.controller;
 
+import com.skydevs.tgdrive.dto.Message;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import lombok.extern.slf4j.Slf4j;
@@ -49,5 +50,12 @@ public class FileUploadController {
 
         botService.sendImageUploadingAFile(file);
         return ResponseEntity.ok("文件上传成功");
+    }
+
+    @PostMapping("/send-message")
+    public ResponseEntity<String> sendMessage(@RequestBody Message message){
+        log.info("处理消息发送");
+        botService.sendMessage(message.getMessage());
+        return ResponseEntity.ok("发送成功");
     }
 }

@@ -40,6 +40,11 @@ public interface BotService extends LongPollingSingleThreadUpdateConsumer, Sprin
      */
     void initializeTelegramClientAsync();
 
+    /**
+     * 发送消息
+     * @param message
+     */
+    void sendMessage(String message);
 
     /**
      * 上传文件

@@ -1,8 +1,11 @@
 package com.skydevs.tgdrive.service.impl;
 
+import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.response.SendResponse;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import com.skydevs.tgdrive.config.AppConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -26,8 +29,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 
 @Service
+@Slf4j
 public class BotServiceImpl implements BotService {
-    private static final Logger logger = LoggerFactory.getLogger(BotServiceImpl.class);
     private TelegramClient telegramClient;
 
     @Autowired
@@ -46,7 +49,7 @@ public class BotServiceImpl implements BotService {
             botToken = appConfig.getToken();
             chatId = appConfig.getTarget();
         } catch (Exception e) {
-            logger.error("获取Bot Token失败: {}", e.getMessage());
+            log.error("获取Bot Token失败: {}", e.getMessage());
         }
     }
 
@@ -57,9 +60,16 @@ public class BotServiceImpl implements BotService {
         try {
             // Execute the method
             telegramClient.execute(sendPhotoRequest);
+            log.info("图片发送成功");
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.info(e.getMessage());
         }
+    }
+
+    public void sendMessage(String m) {
+        TelegramBot bot = new TelegramBot(botToken);
+        bot.execute(new com.pengrad.telegrambot.request.SendMessage(chatId, m));
+        log.info("消息发送成功");
     }
 
     @Override
@@ -67,13 +77,13 @@ public class BotServiceImpl implements BotService {
         if (this.botToken != null && !this.botToken.isEmpty()) {
             try {
                 telegramClient = new OkHttpTelegramClient(botToken);
-                logger.info("Telegram客户端初始化成功");
+                log.info("Telegram客户端初始化成功");
             } catch (Exception e) {
-                logger.error("无法初始化Telegram客户端: {}", e.getMessage());
+                log.error("无法初始化Telegram客户端: {}", e.getMessage());
                 telegramClient = null;
             }
         } else {
-            logger.error("Bot Token为空，无法初始化Telegram客户端");
+            log.error("Bot Token为空，无法初始化Telegram客户端");
             telegramClient = null;
         }
     }
@@ -82,7 +92,7 @@ public class BotServiceImpl implements BotService {
     @Override
     public void consume(Update update) {
         if (telegramClient == null) {
-            logger.error("Telegram客户端未初始化，无法处理更新");
+            log.error("Telegram客户端未初始化，无法处理更新");
             return;
         }
 
@@ -96,11 +106,11 @@ public class BotServiceImpl implements BotService {
                     .build();
             try {
                 telegramClient.execute(message);
-                logger.info("发送消息成功: {}", messageText);
+                log.info("发送消息成功: {}", messageText);
             } catch (TelegramApiException e) {
-                logger.error("发送消息失败: {}", e.getMessage());
+                log.error("发送消息失败: {}", e.getMessage());
             } catch (Exception e) {
-                logger.error("未知错误，发送消息失败: {}", e.getMessage());
+                log.error("未知错误，发送消息失败: {}", e.getMessage());
             }
         }
     }
@@ -118,9 +128,9 @@ public class BotServiceImpl implements BotService {
     @AfterBotRegistration
     public void afterRegistration(BotSession botSession) {
         if (botSession != null && botSession.isRunning()) {
-            logger.info("Registered bot running state is: true");
+            log.info("Registered bot running state is: true");
         } else {
-            logger.error("Bot注册失败或未运行");
+            log.error("Bot注册失败或未运行");
         }
     }
 }
