@@ -42,4 +42,13 @@ public interface BotService{
      * @return
      */
     String uploadFile(MultipartFile multipartFile);
+
+    /**
+     * 获取完整下载路径
+     * @param fileID
+     * @return
+     */
+    String getFullDownloadPath(String fileID);
+
+    String getFileNameByID(String fileID);
 }

@@ -13,10 +13,9 @@ import com.skydevs.tgdrive.service.ConfigService;
 import com.skydevs.tgdrive.config.AppConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 @Service
@@ -27,7 +26,10 @@ public class BotServiceImpl implements BotService {
     private ConfigService configService;
     private String botToken;
     private String chatId;
+    private String url;
     private TelegramBot bot;
+    @Value("${server.port}")
+    private int serverPort;
 
 
     /**
@@ -38,6 +40,11 @@ public class BotServiceImpl implements BotService {
         try {
             AppConfig appConfig = configService.get(filename);
             botToken = appConfig.getToken();
+            if (appConfig.getUrl() != null && !appConfig.getUrl().isEmpty()) {
+                url = appConfig.getUrl();
+            } else {
+                url = "localhost:" + serverPort;
+            }
             chatId = appConfig.getTarget();
         } catch (Exception e) {
             log.error("获取Bot Token失败: {}", e.getMessage());
@@ -66,7 +73,7 @@ public class BotServiceImpl implements BotService {
             String fileID = message.document().fileId();
 
             log.info("File ID: " + fileID);
-            return fileID;
+            return url + "/d/" + fileID;
 
         } catch (IOException e) {
             log.error("文件上传失败: " + e.getMessage());
@@ -75,18 +82,27 @@ public class BotServiceImpl implements BotService {
         return null;
     }
 
+    /**
+     * 获取完整下载路径
+     * @param fileID
+     * @return
+     */
+    public String getFullDownloadPath(String fileID) {
+        GetFile getFile = new GetFile(fileID);
+        GetFileResponse getFileResponse = bot.execute(getFile);
 
-    private String getDownloadPath(String fileID) {
-
-
-        // 获取文件下载路径
-        GetFile fileRequest = new GetFile(fileID);
-        GetFileResponse getFileResponse = bot.execute(fileRequest);
         File file = getFileResponse.file();
-        String fullPath = bot.getFullFilePath(file);
-        log.info(fullPath);
-        log.info(file.filePath());
+        return bot.getFullFilePath(file);
     }
+
+    @Override
+    public String getFileNameByID(String fileID) {
+        GetFile getFile = new GetFile(fileID);
+        GetFileResponse getFileResponse = bot.execute(getFile);
+        File file = getFileResponse.file();
+        return file.filePath();
+    }
+
 
     /**
      * 发送消息

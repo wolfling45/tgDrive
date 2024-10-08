@@ -45,9 +45,9 @@ public class FileUploadController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("上传的文件为空");
         }
 
-        String fileID = botService.uploadFile(multipartFile);
+        String downloadPath= botService.uploadFile(multipartFile);
+        return ResponseEntity.ok("文件上传成功！下载路径：" + downloadPath);
 
-        return ResponseEntity.ok(fileID);
     }
 
     /**
