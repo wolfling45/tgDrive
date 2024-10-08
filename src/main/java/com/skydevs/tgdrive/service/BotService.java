@@ -2,6 +2,7 @@ package com.skydevs.tgdrive.service;
 
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
@@ -12,22 +13,14 @@ import java.io.File;
 /**
  * 机器人服务类，用于初始化机器人和运行机器人相关服务
  */
-public interface BotService extends LongPollingSingleThreadUpdateConsumer, SpringLongPollingBot {
-    /**
-     * 检查更新
-     * @param update
-     */
-    @Override
-    public void consume(Update update);
+public interface BotService{
+
     /**
      * 获取bot token
      * @return
      */
-    @Override
     public String getBotToken();
 
-    @Override
-    public LongPollingUpdateConsumer getUpdatesConsumer();
 
     /**
      * 根据文件名设置botToken
@@ -35,10 +28,6 @@ public interface BotService extends LongPollingSingleThreadUpdateConsumer, Sprin
      */
     void setBotToken(String filename);
 
-    /**
-     * 初始化telegram客户端
-     */
-    void initializeTelegramClientAsync();
 
     /**
      * 发送消息
@@ -46,9 +35,11 @@ public interface BotService extends LongPollingSingleThreadUpdateConsumer, Sprin
      */
     void sendMessage(String message);
 
+
     /**
      * 上传文件
-     * @param file
+     * @param multipartFile
+     * @return
      */
-    public void sendImageUploadingAFile(File file);
+    String uploadFile(MultipartFile multipartFile);
 }
