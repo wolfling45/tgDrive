@@ -52,19 +52,27 @@ public class BotServiceImpl implements BotService {
      */
     @Override
     public String uploadFile(MultipartFile multipartFile) {
-        File file = new File(multipartFile.getOriginalFilename());
         try {
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
-            fileOutputStream.write(multipartFile.getBytes());
+            // 获取文件的字节数组
+            byte[] fileBytes = multipartFile.getBytes();
+
+            // 使用 Telegram Bot 直接发送字节数组
+            TelegramBot bot = new TelegramBot(botToken);
+            SendDocument sendDocument = new SendDocument(chatId, fileBytes)
+                    .fileName(multipartFile.getOriginalFilename());  // 设置文档的文件名为标题（可选）
+
+            SendResponse response = bot.execute(sendDocument);
+            Message message = response.message();
+            String fileID = message.document().fileId();
+
+            log.info("File ID: " + fileID);
+            return fileID;
+
         } catch (IOException e) {
-            log.info(e.getMessage());
+            log.error("文件上传失败: " + e.getMessage());
         }
-        TelegramBot bot = new TelegramBot(botToken);
-        SendResponse response = bot.execute(new SendDocument(chatId, file));
-        Message message = response.message();
-        String fileID = message.document().fileId();
-        log.info(fileID);
-        return fileID;
+
+        return null;
     }
 
     /**
