@@ -10,11 +10,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/d")
@@ -58,8 +62,15 @@ public class DownloadController {
 
                 // 设置响应头
                 HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-                headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+
+                // 根据文件扩展名设置 Content-Type
+                String contentType = getContentTypeFromFilename(filename);
+                headers.setContentType(MediaType.parseMediaType(contentType));
+
+                // 如果是图片，不设置 Content-Disposition 以便浏览器直接显示
+                if (!contentType.startsWith("image/")) {
+                    headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+                }
 
                 // 返回响应
                 return new ResponseEntity<>(resource, headers, HttpStatus.OK);
@@ -82,6 +93,17 @@ public class DownloadController {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    private String getContentTypeFromFilename(String filename) {
+        // 通过文件名的扩展名来推测 MIME 类型
+        Path path = Paths.get(filename);
+        try {
+            return Files.probeContentType(path);
+        } catch (IOException e) {
+            // 如果无法确定类型，返回 application/octet-stream
+            return "application/octet-stream";
         }
     }
 }
