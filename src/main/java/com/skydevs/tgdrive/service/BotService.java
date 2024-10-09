@@ -1,12 +1,6 @@
 package com.skydevs.tgdrive.service;
 
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
-import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
-import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
-import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.io.File;
 
@@ -50,5 +44,10 @@ public interface BotService{
      */
     String getFullDownloadPath(String fileID);
 
+    /**
+     * 根据ID获取文件名
+     * @param fileID
+     * @return
+     */
     String getFileNameByID(String fileID);
 }
