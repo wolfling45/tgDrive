@@ -21,7 +21,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public AppConfig get(String filename) {
-        File configFile = new File(filename + ".json");
+        File configFile = new File("configJSON/" + filename + ".json");
         if (configFile.exists()) {
             try {
                 String content = new String(Files.readAllBytes(Paths.get(configFile.toString())));
@@ -39,7 +39,7 @@ public class ConfigServiceImpl implements ConfigService {
     public void save(ConfigForm configForm) {
         try {
             String jsonString = JSON.toJSONString(configForm, true);
-            Files.write(Paths.get(configForm.getName() + ".json"),jsonString.getBytes());
+            Files.write(Paths.get("configJSON/" + configForm.getName() + ".json"),jsonString.getBytes());
         } catch (IOException e) {
             System.err.println("保存配置文件失败：" + e.getMessage());
         }
