@@ -33,25 +33,30 @@ public class BotServiceImpl implements BotService {
 
 
     /**
-     * 设置bot token
+     * 设置基本配置
      * @param filename
      */
     public void setBotToken(String filename) {
+        AppConfig appConfig = configService.get(filename);
+        if (appConfig == null) {
+            log.error("文件加载失败");
+            return;
+        }
         try {
-            AppConfig appConfig = configService.get(filename);
             botToken = appConfig.getToken();
-            if (appConfig.getUrl() != null && !appConfig.getUrl().isEmpty()) {
-                url = appConfig.getUrl();
-            } else {
-                url = "localhost:" + serverPort;
-            }
             chatId = appConfig.getTarget();
         } catch (Exception e) {
             log.error("获取Bot Token失败: {}", e.getMessage());
         }
+        if (appConfig.getUrl() == null && appConfig.getUrl().isEmpty()) {
+            url = "localhost:" + serverPort;
+        } else {
+            url = appConfig.getUrl();
+        }
         bot = new TelegramBot(botToken);
     }
 
+    //TODO 处理文件批量上传
 
     /**
      * 上传文件
@@ -74,6 +79,7 @@ public class BotServiceImpl implements BotService {
 
             log.info("File ID: " + fileID);
             return url + "/d/" + fileID;
+            //TODO 将文件的文件名、fileID、下载路径、filesize、大小、上传时间存入sqlite
 
         } catch (IOException e) {
             log.error("文件上传失败: " + e.getMessage());

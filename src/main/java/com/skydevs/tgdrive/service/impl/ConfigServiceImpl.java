@@ -8,6 +8,7 @@ import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.exception.FileNotFoundException;
 import com.skydevs.tgdrive.service.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -18,6 +19,10 @@ import java.util.Map;
 
 @Service
 public class ConfigServiceImpl implements ConfigService {
+
+    @Value("${server.port}")
+    private int serverPort;
+
 
     @Override
     public AppConfig get(String filename) {
@@ -37,11 +42,15 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public void save(ConfigForm configForm) {
+        if (configForm.getUrl() == null || configForm.getUrl().isEmpty()) {
+            configForm.setUrl("localhost:" + serverPort);
+        }
         try {
             String jsonString = JSON.toJSONString(configForm, true);
             Files.write(Paths.get("configJSON/" + configForm.getName() + ".json"),jsonString.getBytes());
         } catch (IOException e) {
             System.err.println("保存配置文件失败：" + e.getMessage());
         }
+        //TODO 将用JSON保存的形式转为用sqlite存储
     }
 }
