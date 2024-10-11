@@ -48,7 +48,7 @@ public class BotServiceImpl implements BotService {
         } catch (Exception e) {
             log.error("获取Bot Token失败: {}", e.getMessage());
         }
-        if (appConfig.getUrl() == null && appConfig.getUrl().isEmpty()) {
+        if (appConfig.getUrl() == null || appConfig.getUrl().isEmpty()) {
             url = "localhost:" + serverPort;
         } else {
             url = appConfig.getUrl();
