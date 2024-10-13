@@ -36,17 +36,33 @@ public class FileUploadController {
 
     /**
      * 上传文件
-     * @param multipartFile
+     * @param multipartFiles
      * @return
      */
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(@RequestParam("file")MultipartFile multipartFile) {
-        if (multipartFile.isEmpty()) {
+    public ResponseEntity<String> uploadFile(@RequestParam("file")MultipartFile[] multipartFiles) {
+        if (multipartFiles.length == 0 || multipartFiles == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("上传的文件为空");
         }
 
-        String downloadPath= botService.uploadFile(multipartFile);
-        return ResponseEntity.ok("文件上传成功！下载路径：" + downloadPath);
+        StringBuilder resultMessage = new StringBuilder();
+
+        for (MultipartFile file : multipartFiles) {
+            if (!file.isEmpty()) {
+                String downloadPath = botService.uploadFile(file);
+                resultMessage.append("文件上传成功！文件名：")
+                        .append(file.getOriginalFilename())
+                        .append("，下载路径：")
+                        .append(downloadPath)
+                        .append("\n");
+            } else {
+                resultMessage.append("文件上传失败！文件名：")
+                        .append(file.getOriginalFilename())
+                        .append("为空。\n");
+            }
+        }
+
+        return ResponseEntity.ok(resultMessage.toString());
 
     }
 
