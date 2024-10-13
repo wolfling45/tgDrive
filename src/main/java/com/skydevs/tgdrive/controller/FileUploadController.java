@@ -1,6 +1,8 @@
 package com.skydevs.tgdrive.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.skydevs.tgdrive.dto.Message;
+import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 @RestController
@@ -45,24 +50,22 @@ public class FileUploadController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("上传的文件为空");
         }
 
-        StringBuilder resultMessage = new StringBuilder();
+        List<UploadFile> uploadFiles = new ArrayList<>();
 
         for (MultipartFile file : multipartFiles) {
+            UploadFile uploadFile = new UploadFile();
             if (!file.isEmpty()) {
                 String downloadPath = botService.uploadFile(file);
-                resultMessage.append("文件上传成功！文件名：")
-                        .append(file.getOriginalFilename())
-                        .append("，下载路径：")
-                        .append(downloadPath)
-                        .append("\n");
+                uploadFile.setFileName(file.getOriginalFilename());
+                uploadFile.setDownloadLink(downloadPath);
+                uploadFiles.add(uploadFile);
             } else {
-                resultMessage.append("文件上传失败！文件名：")
-                        .append(file.getOriginalFilename())
-                        .append("为空。\n");
+                uploadFile.setFileName("文件不存在");
             }
         }
 
-        return ResponseEntity.ok(resultMessage.toString());
+        String resultJSON = JSON.toJSONString(uploadFiles);
+        return ResponseEntity.ok(resultJSON);
 
     }
 
