@@ -5,6 +5,7 @@ import com.skydevs.tgdrive.dto.Message;
 import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,9 +25,6 @@ public class FileUploadController {
     @Autowired
     private BotService botService;
 
-    @Autowired
-    private ConfigService configService;
-
     /**
      * 加载配置
      * @param filename
@@ -45,7 +43,7 @@ public class FileUploadController {
      * @return
      */
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(@RequestParam("file")MultipartFile[] multipartFiles) {
+    public ResponseEntity<String> uploadFile(@RequestParam("file")MultipartFile[] multipartFiles, HttpServletRequest request) {
         if (multipartFiles.length == 0 || multipartFiles == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("上传的文件为空");
         }
@@ -56,8 +54,12 @@ public class FileUploadController {
             UploadFile uploadFile = new UploadFile();
             if (!file.isEmpty()) {
                 String downloadPath = botService.uploadFile(file);
+                String protocol = request.getScheme(); // 获取协议 http 或 https
+                String host = request.getServerName(); // 获取主机名 localhost 或实际域名
+                int port = request.getServerPort(); // 获取端口号 8080 或其他
+                String downloadUrl = protocol + "://" + host + ":" + port + downloadPath;
                 uploadFile.setFileName(file.getOriginalFilename());
-                uploadFile.setDownloadLink(downloadPath);
+                uploadFile.setDownloadLink(downloadUrl);
                 uploadFiles.add(uploadFile);
             } else {
                 uploadFile.setFileName("文件不存在");

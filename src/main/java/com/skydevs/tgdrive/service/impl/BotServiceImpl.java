@@ -26,10 +26,12 @@ public class BotServiceImpl implements BotService {
     private ConfigService configService;
     private String botToken;
     private String chatId;
-    private String url;
     private TelegramBot bot;
+    /*
     @Value("${server.port}")
     private int serverPort;
+    private String url;
+     */
 
 
     /**
@@ -48,11 +50,13 @@ public class BotServiceImpl implements BotService {
         } catch (Exception e) {
             log.error("获取Bot Token失败: {}", e.getMessage());
         }
+        /*
         if (appConfig.getUrl() == null || appConfig.getUrl().isEmpty()) {
-            url = "localhost:" + serverPort;
+            url = "http://localhost:" + serverPort;
         } else {
             url = appConfig.getUrl();
         }
+         */
         bot = new TelegramBot(botToken);
     }
 
@@ -78,7 +82,7 @@ public class BotServiceImpl implements BotService {
             String fileID = message.document().fileId();
 
             log.info("File ID: " + fileID);
-            return url + "/d/" + fileID;
+            return "/d/" + fileID;
             //TODO 将文件的文件名、fileID、下载路径、filesize、大小、上传时间存入sqlite
 
         } catch (IOException e) {
