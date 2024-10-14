@@ -7,6 +7,7 @@ import com.skydevs.tgdrive.config.AppConfig;
 import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.exception.FileNotFoundException;
 import com.skydevs.tgdrive.service.ConfigService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,15 +19,23 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class ConfigServiceImpl implements ConfigService {
 
     @Value("${server.port}")
     private int serverPort;
 
+    private final File configDir = new File("configJSON");
 
+    /**
+     * 获取配置文件
+     * @param filename
+     * @return
+     */
     @Override
     public AppConfig get(String filename) {
-        File configFile = new File("configJSON/" + filename + ".json");
+
+        File configFile = new File(configDir, filename + ".json");
         if (configFile.exists()) {
             try {
                 String content = new String(Files.readAllBytes(Paths.get(configFile.toString())));
@@ -40,16 +49,32 @@ public class ConfigServiceImpl implements ConfigService {
         }
     }
 
+    /**
+     * 保存配置文件
+     * @param configForm
+     */
     @Override
     public void save(ConfigForm configForm) {
+        /*
         if (configForm.getUrl() == null || configForm.getUrl().isEmpty()) {
             configForm.setUrl("localhost:" + serverPort);
         }
+
+         */
+        if (!configDir.exists()) {
+            if (!configDir.mkdirs()) {
+                throw new RuntimeException("无法创建 configJSON 文件夹");
+            }
+        }
+
+        File configFile = new File(configDir, configForm.getName() + ".json");
+
         try {
             String jsonString = JSON.toJSONString(configForm, true);
-            Files.write(Paths.get("configJSON/" + configForm.getName() + ".json"),jsonString.getBytes());
+            Files.write(Paths.get(configFile.toURI()),jsonString.getBytes());
         } catch (IOException e) {
-            System.err.println("保存配置文件失败：" + e.getMessage());
+            log.error("保存配置文件失败：" + e.getMessage());
+            throw new RuntimeException("配置保存失败", e);
         }
         //TODO 将用JSON保存的形式转为用sqlite存储
     }

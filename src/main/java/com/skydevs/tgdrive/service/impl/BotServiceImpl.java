@@ -60,8 +60,6 @@ public class BotServiceImpl implements BotService {
         bot = new TelegramBot(botToken);
     }
 
-    //TODO 处理文件批量上传
-
     /**
      * 上传文件
      * @param multipartFile
