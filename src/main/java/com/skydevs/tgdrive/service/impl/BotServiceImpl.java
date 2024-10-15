@@ -126,11 +126,23 @@ public class BotServiceImpl implements BotService {
                         .fileName(multipartFile.getOriginalFilename());  // 设置文档的文件名
 
                 SendResponse response = bot.execute(sendDocument);
-                Message message = response.message();
-                String fileID = message.document().fileId();
+                // 检查 response 是否成功
+                if (response.isOk()) {
+                    Message message = response.message();
+                    if (message != null && message.document() != null) {
+                        String fileID = message.document().fileId();
+                        // 正常处理 fileID
+                        log.info("文件上传成功，File ID: " + fileID);
+                        return "/d/" + fileID;
+                    } else {
+                        // 处理 message 或 document 为 null 的情况
+                        log.error("Message or document is null. Response: {}", response);
+                    }
+                } else {
+                    // 处理 API 请求失败的情况
+                    log.error("Failed to send document. Error: {}", response.description());
 
-                log.info("文件上传成功，File ID: " + fileID);
-                return "/d/" + fileID;
+                }
 
                 //TODO 将文件的文件名、fileID、下载路径、filesize、大小、上传时间存入sqlite
             }

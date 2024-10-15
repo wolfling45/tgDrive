@@ -6,6 +6,10 @@ spring:
     multipart:
       max-file-size: -1
       max-request-size: -1
+  mvc:
+    view:
+      prefix: /
+      suffix: html
   profiles:
     active: dev
   main:
