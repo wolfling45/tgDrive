@@ -75,6 +75,31 @@ public class BotServiceImpl implements BotService {
         bot = new TelegramBot(botToken);
     }
 
+    private String sendFileBytes(byte[] fileBytes, String filename) {
+        // 使用 Telegram Bot 直接发送字节数组
+        SendDocument sendDocument = new SendDocument(chatId, fileBytes)
+                .fileName(filename);// 设置文档的文件名
+
+        SendResponse response = bot.execute(sendDocument);
+        // 检查 response 是否成功
+        if (response.isOk()) {
+            Message message = response.message();
+            if (message != null && message.document() != null) {
+                String fileID = message.document().fileId();
+                // 正常处理 fileID
+                log.info("文件上传成功，File ID: " + fileID);
+                return fileID;
+            } else {
+                // 处理 message 或 document 为 null 的情况
+                log.error("Message or document is null. Response: {}", response);
+            }
+        } else {
+            // 处理 API 请求失败的情况
+            log.error("Failed to send document. Error: {}", response.description());
+        }
+        return null;
+    }
+
     /**
      * 上传文件
      * @param multipartFile
@@ -87,70 +112,60 @@ public class BotServiceImpl implements BotService {
             if (multipartFile.getSize() > MAX_FILE_SIZE) {
                 log.info("文件大于 10MB，开始切割并上传...");
 
-                // 将文件切割为小于等于 20MB 的部分
+                // 将文件切割为小于等于 10MB 的部分
                 List<java.io.File> fileParts = splitFile(multipartFile);
 
                 // 保存每个部分的 file_id
                 List<String> fileIds = new ArrayList<>();
 
                 // 上传每个文件部分并保存 file_id
+                int retryCount = 3;
                 for (java.io.File part : fileParts) {
                     byte[] fileBytes = Files.readAllBytes(part.toPath());
+                    String fileID = null;
 
-                    // 使用 Telegram Bot 发送每个文件部分
-                    SendDocument sendDocument = new SendDocument(chatId, fileBytes)
-                            .fileName(part.getName()); // 设置分片文件名
+                    try {
+                        for (int i = 0; i < retryCount; i++) {
+                            fileID = sendFileBytes(fileBytes, part.getName());
+                            if (fileID != null) {
+                                break;
+                            }
+                            log.warn("上传失败，正在重试第" + (i + 1) + "次");
+                        }
 
-                    SendResponse response = bot.execute(sendDocument);
-                    Message message = response.message();
-                    String fileID = message.document().fileId();
-
-                    log.info("分片上传成功，File ID: " + fileID);
-                    fileIds.add(fileID);
-
-                    // 删除本地临时分片文件
-                    part.delete();
+                        if (fileID == null) {
+                            log.error("分片上传失败，文件名: " + part.getName() + "，整个文件终止上传");
+                            throw new RuntimeException("上传失败，终止上传流程。文件名: " + multipartFile.getOriginalFilename());
+                        }
+                        log.info("分片上传成功，File ID: " + fileID);
+                        fileIds.add(fileID);
+                    } catch (RuntimeException e) {
+                        System.out.println(e.getMessage());
+                    } finally {
+                        // 删除本地临时分片文件
+                        part.delete();
+                    }
                 }
-
                 // 创建一个记录文件，包含所有分片的 file_id 信息
                 String record = createRecordFile(multipartFile.getOriginalFilename(), multipartFile.getSize(), fileIds);
-
                 return record; // 返回记录文件的 URL 或 file_id
-
             } else {
-                // 文件小于等于 20MB，直接上传
+                // 文件小于等于 10MB，直接上传
                 byte[] fileBytes = multipartFile.getBytes();
 
-                // 使用 Telegram Bot 直接发送字节数组
-                SendDocument sendDocument = new SendDocument(chatId, fileBytes)
-                        .fileName(multipartFile.getOriginalFilename());  // 设置文档的文件名
-
-                SendResponse response = bot.execute(sendDocument);
-                // 检查 response 是否成功
-                if (response.isOk()) {
-                    Message message = response.message();
-                    if (message != null && message.document() != null) {
-                        String fileID = message.document().fileId();
-                        // 正常处理 fileID
-                        log.info("文件上传成功，File ID: " + fileID);
-                        return "/d/" + fileID;
-                    } else {
-                        // 处理 message 或 document 为 null 的情况
-                        log.error("Message or document is null. Response: {}", response);
-                    }
+                String fileID = null;
+                fileID = sendFileBytes(fileBytes, multipartFile.getOriginalFilename());
+                if (fileID != null) {
+                    return "/d" + fileID;
                 } else {
-                    // 处理 API 请求失败的情况
-                    log.error("Failed to send document. Error: {}", response.description());
-
+                    throw new RuntimeException();
                 }
-
                 //TODO 将文件的文件名、fileID、下载路径、filesize、大小、上传时间存入sqlite
             }
 
         } catch (IOException e) {
             log.error("文件上传失败: " + e.getMessage());
         }
-
         return null;
     }
 
