@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.skydevs.tgdrive.dto.Message;
 import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.service.BotService;
-import com.skydevs.tgdrive.service.ConfigService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
