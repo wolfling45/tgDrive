@@ -156,7 +156,7 @@ public class BotServiceImpl implements BotService {
                 String fileID = null;
                 fileID = sendFileBytes(fileBytes, multipartFile.getOriginalFilename());
                 if (fileID != null) {
-                    return "/d" + fileID;
+                    return "/d/" + fileID;
                 } else {
                     throw new RuntimeException();
                 }
