@@ -84,14 +84,18 @@ public class BotServiceImpl implements BotService {
         // 检查 response 是否成功
         if (response.isOk()) {
             Message message = response.message();
-            if (message != null && message.document() != null) {
-                String fileID = message.document().fileId();
-                // 正常处理 fileID
+            String fileID;
+            if (message.document() != null) {
+                fileID = message.document().fileId();
+                log.info("文件上传成功，File ID: " + fileID);
+                return fileID;
+            } else if (message.sticker().fileId() != null) {
+                fileID = message.sticker().fileId();
                 log.info("文件上传成功，File ID: " + fileID);
                 return fileID;
             } else {
                 // 处理 message 或 document 为 null 的情况
-                log.error("Message or document is null. Response: {}", response);
+                log.error("sticker or document is null. Response: {}", response);
             }
         } else {
             // 处理 API 请求失败的情况
