@@ -53,6 +53,7 @@ public class FileUploadController {
             UploadFile uploadFile = new UploadFile();
             if (!file.isEmpty()) {
                 String downloadPath = botService.uploadFile(file);
+                //TODO: 反向代理异常
                 String protocol = request.getScheme(); // 获取协议 http 或 https
                 String host = request.getServerName(); // 获取主机名 localhost 或实际域名
                 int port = request.getServerPort(); // 获取端口号 8080 或其他

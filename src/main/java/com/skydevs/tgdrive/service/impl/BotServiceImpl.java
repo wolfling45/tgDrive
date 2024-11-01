@@ -80,28 +80,32 @@ public class BotServiceImpl implements BotService {
         SendDocument sendDocument = new SendDocument(chatId, fileBytes)
                 .fileName(filename);// 设置文档的文件名
 
-        SendResponse response = bot.execute(sendDocument);
-        // 检查 response 是否成功
-        if (response.isOk()) {
-            Message message = response.message();
-            String fileID;
-            if (message.document() != null) {
-                fileID = message.document().fileId();
-                log.info("文件上传成功，File ID: " + fileID);
-                return fileID;
-            } else if (message.sticker().fileId() != null) {
-                fileID = message.sticker().fileId();
-                log.info("文件上传成功，File ID: " + fileID);
-                return fileID;
+        try {
+            SendResponse response = bot.execute(sendDocument);
+            // 检查 response 是否成功
+            if (response.isOk()) {
+                Message message = response.message();
+                String fileID;
+                if (message.document() != null) {
+                    fileID = message.document().fileId();
+                    log.info("文件上传成功，File ID: " + fileID);
+                    return fileID;
+                } else if (message.sticker().fileId() != null) {
+                    fileID = message.sticker().fileId();
+                    log.info("文件上传成功，File ID: " + fileID);
+                    return fileID;
+                } else {
+                    // 处理 message 或 document 为 null 的情况
+                    log.error("sticker or document is null. Response: {}", response);
+                }
             } else {
-                // 处理 message 或 document 为 null 的情况
-                log.error("sticker or document is null. Response: {}", response);
+                // 处理 API 请求失败的情况
+                log.error("Failed to send document. Error: {}", response.description());
             }
-        } else {
-            // 处理 API 请求失败的情况
-            log.error("Failed to send document. Error: {}", response.description());
+        } catch (RuntimeException e) {
+            log.error("Failed to send document. network error");
         }
-        return null;
+       return null;
     }
 
     /**
@@ -109,6 +113,7 @@ public class BotServiceImpl implements BotService {
      * @param multipartFile
      * @return
      */
+    //TODO: 改用多线程加速上传
     @Override
     public String uploadFile(MultipartFile multipartFile) {
         try {
@@ -148,22 +153,28 @@ public class BotServiceImpl implements BotService {
                     } finally {
                         // 删除本地临时分片文件
                         part.delete();
+                        return null;
                     }
                 }
                 // 创建一个记录文件，包含所有分片的 file_id 信息
                 String record = createRecordFile(multipartFile.getOriginalFilename(), multipartFile.getSize(), fileIds);
-                return record; // 返回记录文件的 URL 或 file_id
+                return record; // 返回记录文件的下载路径
             } else {
                 // 文件小于等于 10MB，直接上传
                 byte[] fileBytes = multipartFile.getBytes();
 
                 String fileID = null;
                 fileID = sendFileBytes(fileBytes, multipartFile.getOriginalFilename());
-                if (fileID != null) {
-                    return "/d/" + fileID;
-                } else {
-                    throw new RuntimeException();
+                try {
+                    if (fileID != null) {
+                        return "/d/" + fileID;
+                    } else {
+                        throw new RuntimeException("文件上传失败");
+                    }
+                } catch (RuntimeException e) {
+                    log.error(e.getMessage());
                 }
+
                 //TODO 将文件的文件名、fileID、下载路径、filesize、大小、上传时间存入sqlite
             }
 
