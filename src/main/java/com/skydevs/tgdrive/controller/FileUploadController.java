@@ -57,7 +57,12 @@ public class FileUploadController {
                 String protocol = request.getScheme(); // 获取协议 http 或 https
                 String host = request.getServerName(); // 获取主机名 localhost 或实际域名
                 int port = request.getServerPort(); // 获取端口号 8080 或其他
-                String downloadUrl = protocol + "://" + host + ":" + port + downloadPath;
+                String downloadUrl;
+                if (downloadPath == null) {
+                    downloadUrl = "文件上传失败";
+                } else {
+                    downloadUrl = protocol + "://" + host + ":" + port + downloadPath;
+                }
                 uploadFile.setFileName(file.getOriginalFilename());
                 uploadFile.setDownloadLink(downloadUrl);
                 uploadFiles.add(uploadFile);
