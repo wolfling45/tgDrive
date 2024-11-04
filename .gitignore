@@ -35,3 +35,4 @@ build/
 src/main/resources/application-dev.yml
 *.json
 src/main/resources/static/
+*.db

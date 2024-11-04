@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_name TEXT NOT NULL,
+    download_url TEXT NOT NULL,
+    upload_time INTEGER NOT NULL
+);

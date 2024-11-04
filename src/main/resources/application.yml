@@ -15,8 +15,15 @@ spring:
   main:
     allow-circular-references: true
   datasource:
-    url: jdbc:sqlite:path_to_your_database/database.db
+    url: jdbc:sqlite:db/tgDrive.db
     driver-class-name: org.sqlite.JDBC
   sql:
     init:
       mode: always
+mybatis:
+  #mapper配置文件
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.skydevs.tgdrive.entity
+  configuration:
+    #开启驼峰命名
+    map-underscore-to-camel-case: true
