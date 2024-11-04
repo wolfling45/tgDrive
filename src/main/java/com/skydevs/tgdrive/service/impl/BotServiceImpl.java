@@ -148,10 +148,10 @@ public class BotServiceImpl implements BotService {
                         fileIds.add(fileID);
                     } catch (RuntimeException e) {
                         System.out.println(e.getMessage());
+                        return null;
                     } finally {
                         // 删除本地临时分片文件
                         part.delete();
-                        return null;
                     }
                 }
                 // 创建一个记录文件，包含所有分片的 file_id 信息
