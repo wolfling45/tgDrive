@@ -22,7 +22,6 @@ import java.util.Map;
 @Slf4j
 public class ConfigServiceImpl implements ConfigService {
 
-    @Value("${server.port}")
     private int serverPort;
 
     private final File configDir = new File("configJSON");
