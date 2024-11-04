@@ -14,9 +14,6 @@ public class AppConfig {
     // Channel name or id
     private String target;
 
-    // run mode, p or m
-    private String mode;
-
     // password
     private String pass;
 

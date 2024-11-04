@@ -1,7 +1,6 @@
 package com.skydevs.tgdrive.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.File;
 import com.pengrad.telegrambot.model.Message;
@@ -10,27 +9,23 @@ import com.pengrad.telegrambot.request.SendDocument;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.GetFileResponse;
 import com.pengrad.telegrambot.response.SendResponse;
+import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.entity.BigFileInfo;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
-import com.skydevs.tgdrive.config.AppConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -54,14 +49,14 @@ public class BotServiceImpl implements BotService {
      * @param filename
      */
     public void setBotToken(String filename) {
-        AppConfig appConfig = configService.get(filename);
-        if (appConfig == null) {
-            log.error("文件加载失败");
+        ConfigForm config = configService.get(filename);
+        if (config == null) {
+            log.error("配置加载失败");
             return;
         }
         try {
-            botToken = appConfig.getToken();
-            chatId = appConfig.getTarget();
+            botToken = config.getToken();
+            chatId = config.getTarget();
         } catch (Exception e) {
             log.error("获取Bot Token失败: {}", e.getMessage());
         }

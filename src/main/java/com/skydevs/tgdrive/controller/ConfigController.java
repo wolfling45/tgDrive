@@ -1,6 +1,5 @@
 package com.skydevs.tgdrive.controller;
 
-import com.skydevs.tgdrive.config.AppConfig;
 import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.service.ConfigService;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +16,14 @@ public class ConfigController {
     private ConfigService configService;
 
     @GetMapping()
-    public ResponseEntity<AppConfig> getConfig(@RequestParam String filename) {
-        AppConfig appConfig = configService.get(filename);
+    public ResponseEntity<ConfigForm> getConfig(@RequestParam String filename) {
+        ConfigForm config = configService.get(filename);
+        if (config == null) {
+            log.error("配置获取失败，请检查文件名是否错误");
+            return null;
+        }
         log.info("获取数据成功");
-        return ResponseEntity.ok(appConfig);
+        return ResponseEntity.ok(config);
     }
 
     @PostMapping()

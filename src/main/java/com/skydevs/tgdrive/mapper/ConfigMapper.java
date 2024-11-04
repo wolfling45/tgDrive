@@ -1,6 +1,7 @@
 package com.skydevs.tgdrive.mapper;
 
 import com.skydevs.tgdrive.dto.ConfigForm;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -21,4 +22,11 @@ public interface ConfigMapper {
      */
     @Select("SELECT * From configs where name = #{name}")
     ConfigForm getByName(@Param("name")String name);
+
+    /**
+     * 根据名称删除整行
+     * @param name
+     */
+    @Delete("DELETE FROM configs where name = #{name}")
+    void deleteByName(String name);
 }
