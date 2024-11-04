@@ -13,6 +13,7 @@ import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.entity.BigFileInfo;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
+import com.skydevs.tgdrive.utils.UserFriendly;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,8 @@ public class BotServiceImpl implements BotService {
 
     @Autowired
     private ConfigService configService;
+    @Autowired
+    private UserFriendly userFriendly;
     private String botToken;
     private String chatId;
     private TelegramBot bot;
@@ -114,7 +117,7 @@ public class BotServiceImpl implements BotService {
         try {
             // 判断文件大小是否大于 10MB
             if (multipartFile.getSize() > MAX_FILE_SIZE) {
-                log.info("文件大于 10MB，开始切割并上传...");
+                log.info("文件大于 10MB，开始切割并上传...{}", userFriendly.humanReadableFileSize(multipartFile.getSize()));
 
                 // 将文件切割为小于等于 10MB 的部分
                 List<java.io.File> fileParts = splitFile(multipartFile);
