@@ -1,10 +1,11 @@
 package com.skydevs.tgdrive.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Message {
     private String message;
 }

@@ -1,12 +1,13 @@
 package com.skydevs.tgdrive.entity;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class BigFileInfo {
     private String fileName;
     private long fileSize;

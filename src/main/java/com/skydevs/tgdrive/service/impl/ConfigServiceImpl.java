@@ -1,28 +1,21 @@
 package com.skydevs.tgdrive.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skydevs.tgdrive.config.AppConfig;
 import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.exception.FileNotFoundException;
 import com.skydevs.tgdrive.service.ConfigService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Map;
 
 @Service
 @Slf4j
 public class ConfigServiceImpl implements ConfigService {
-
-    private int serverPort;
 
     private final File configDir = new File("configJSON");
 

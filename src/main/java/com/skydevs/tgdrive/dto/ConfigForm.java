@@ -1,15 +1,15 @@
 package com.skydevs.tgdrive.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class ConfigForm {
     private String name;
     private String token;
     private String target;
-    private String mode;
     private String pass;
     private String url;
 }
