@@ -11,6 +11,8 @@ import com.pengrad.telegrambot.response.GetFileResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.entity.BigFileInfo;
+import com.skydevs.tgdrive.entity.FileInfo;
+import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import com.skydevs.tgdrive.utils.UserFriendly;
@@ -25,6 +27,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +40,8 @@ public class BotServiceImpl implements BotService {
     private ConfigService configService;
     @Autowired
     private UserFriendly userFriendly;
+    @Autowired
+    private FileMapper fileMapper;
     private String botToken;
     private String chatId;
     private TelegramBot bot;
@@ -156,7 +162,17 @@ public class BotServiceImpl implements BotService {
                 }
                 // 创建一个记录文件，包含所有分片的 file_id 信息
                 String record = createRecordFile(multipartFile.getOriginalFilename(), multipartFile.getSize(), fileIds);
-                return record; // 返回记录文件的下载路径
+
+                // 存入数据库
+                FileInfo fileInfo = FileInfo.builder()
+                        .fileId(record)
+                        .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
+                        .uploadTime(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
+                        .downloadUrl("/d/" + record)
+                        .fileName(multipartFile.getOriginalFilename())
+                        .build();
+                fileMapper.insertFile(fileInfo);
+                return "/d/" + record; // 返回记录文件的下载路径
             } else {
                 // 文件小于等于 10MB，直接上传
                 byte[] fileBytes = multipartFile.getBytes();
@@ -165,6 +181,15 @@ public class BotServiceImpl implements BotService {
                 fileID = sendFileBytes(fileBytes, multipartFile.getOriginalFilename());
                 try {
                     if (fileID != null) {
+                        // 存入数据库
+                        FileInfo fileInfo = FileInfo.builder()
+                                .fileId(fileID)
+                                .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
+                                .uploadTime(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
+                                .downloadUrl("/d/" + fileID)
+                                .fileName(multipartFile.getOriginalFilename())
+                                .build();
+                        fileMapper.insertFile(fileInfo);
                         return "/d/" + fileID;
                     } else {
                         throw new RuntimeException("文件上传失败");
@@ -172,16 +197,12 @@ public class BotServiceImpl implements BotService {
                 } catch (RuntimeException e) {
                     log.error(e.getMessage());
                 }
-
-                //TODO 将文件的文件名、fileID、下载路径、filesize、大小、上传时间存入sqlite
             }
-
         } catch (IOException e) {
             log.error("文件上传失败: " + e.getMessage());
         }
         return null;
     }
-
 
     /**
      * 生成上传文件
@@ -222,7 +243,7 @@ public class BotServiceImpl implements BotService {
         // 删除本地临时文件
         Files.deleteIfExists(tempFile);
 
-        return "/d/" + recordFileId;
+        return recordFileId;
     }
 
 
