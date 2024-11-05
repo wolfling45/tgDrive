@@ -1,9 +1,9 @@
 package com.skydevs.tgdrive.entity;
 
-import lombok.*;
-
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
@@ -18,9 +18,5 @@ public class FileInfo {
     // 用于存储上传时间的 UNIX 时间戳
     private Long uploadTime;
 
-    // 获取 UNIX 时间戳并转换回 LocalDateTime
-    public LocalDateTime getUploadTime() {
-        return LocalDateTime.ofEpochSecond(uploadTime, 0, ZoneOffset.UTC);
-    }
 }
 

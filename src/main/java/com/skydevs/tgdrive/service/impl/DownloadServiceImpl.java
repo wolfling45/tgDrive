@@ -38,6 +38,7 @@ public class DownloadServiceImpl implements DownloadService {
             // 从 botService 获取文件的下载路径和文件名
             String fileUrl = botService.getFullDownloadPath(fileID);
             String filename = botService.getFileNameByID(fileID);
+            //TODO: 下载文件的文件名从数据库获取
 
             // 下载文件
             URL url = new URL(fileUrl);
