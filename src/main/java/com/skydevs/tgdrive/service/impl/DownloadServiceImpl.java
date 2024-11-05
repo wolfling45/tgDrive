@@ -157,4 +157,5 @@ public class DownloadServiceImpl implements DownloadService {
             return "application/octet-stream";
         }
     }
+    //TODO: GIF直接显示
 }

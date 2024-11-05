@@ -1,8 +1,7 @@
 package com.skydevs.tgdrive.service;
 
+import com.skydevs.tgdrive.result.PageResult;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
 
 /**
  * 机器人服务类，用于初始化机器人和运行机器人相关服务
@@ -35,7 +34,7 @@ public interface BotService{
      * @param multipartFile
      * @return
      */
-    String uploadFile(MultipartFile multipartFile);
+    String uploadFile(MultipartFile multipartFile, String prefix);
 
     /**
      * 获取完整下载路径
@@ -50,4 +49,12 @@ public interface BotService{
      * @return
      */
     String getFileNameByID(String fileID);
+
+    /**
+     * 分页查询文件列表
+     * @param page
+     * @param size
+     * @return
+     */
+    PageResult getFileList(int page, int size);
 }

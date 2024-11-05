@@ -1,6 +1,7 @@
 package com.skydevs.tgdrive.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.github.pagehelper.PageHelper;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.File;
 import com.pengrad.telegrambot.model.Message;
@@ -13,6 +14,7 @@ import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.entity.BigFileInfo;
 import com.skydevs.tgdrive.entity.FileInfo;
 import com.skydevs.tgdrive.mapper.FileMapper;
+import com.skydevs.tgdrive.result.PageResult;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import com.skydevs.tgdrive.utils.UserFriendly;
@@ -119,7 +121,7 @@ public class BotServiceImpl implements BotService {
      */
     //TODO: 改用多线程加速上传
     @Override
-    public String uploadFile(MultipartFile multipartFile) {
+    public String uploadFile(MultipartFile multipartFile, String prefix) {
         try {
             // 判断文件大小是否大于 10MB
             if (multipartFile.getSize() > MAX_FILE_SIZE) {
@@ -168,7 +170,7 @@ public class BotServiceImpl implements BotService {
                         .fileId(record)
                         .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
                         .uploadTime(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
-                        .downloadUrl("/d/" + record)
+                        .downloadUrl(prefix + "/d/" + record)
                         .fileName(multipartFile.getOriginalFilename())
                         .build();
                 fileMapper.insertFile(fileInfo);
@@ -186,7 +188,7 @@ public class BotServiceImpl implements BotService {
                                 .fileId(fileID)
                                 .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
                                 .uploadTime(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
-                                .downloadUrl("/d/" + fileID)
+                                .downloadUrl(prefix + "/d/" + fileID)
                                 .fileName(multipartFile.getOriginalFilename())
                                 .build();
                         fileMapper.insertFile(fileInfo);
@@ -304,6 +306,14 @@ public class BotServiceImpl implements BotService {
         GetFileResponse getFileResponse = bot.execute(getFile);
         File file = getFileResponse.file();
         return file.filePath();
+    }
+
+    @Override
+    public PageResult getFileList(int page, int size) {
+        // 设置分页
+        PageHelper.startPage(page, size);
+        List<FileInfo> fileInfos = fileMapper.getAllFiles();
+        return new PageResult(fileInfos.size(), fileInfos);
     }
 
 
