@@ -22,4 +22,7 @@ public interface FileMapper {
      */
     @Select("SELECT * FROM files order by upload_time")
     Page<FileInfo> getAllFiles();
+
+    @Select("SELECT file_name FROM files where file_id = #{fileId}")
+    String getFileNameByFileId(String fileId);
 }

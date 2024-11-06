@@ -2,6 +2,7 @@ package com.skydevs.tgdrive.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.skydevs.tgdrive.entity.BigFileInfo;
+import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.DownloadService;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,8 @@ public class DownloadServiceImpl implements DownloadService {
 
     @Autowired
     private BotService botService;
+    @Autowired
+    private FileMapper fileMapper;
 
     @Override
     public ResponseEntity<Resource> downloadFile(String fileID) {
@@ -37,8 +40,10 @@ public class DownloadServiceImpl implements DownloadService {
         try {
             // 从 botService 获取文件的下载路径和文件名
             String fileUrl = botService.getFullDownloadPath(fileID);
-            String filename = botService.getFileNameByID(fileID);
-            //TODO: 下载文件的文件名从数据库获取
+            String filename = fileMapper.getFileNameByFileId(fileID);
+            if (filename == null || filename.isEmpty()) {
+                filename = botService.getFileNameByID(fileID);
+            }
 
             // 下载文件
             URL url = new URL(fileUrl);
@@ -118,7 +123,10 @@ public class DownloadServiceImpl implements DownloadService {
 
                     // 如果是图片，不设置 Content-Disposition 以便浏览器直接显示
                     if (!contentType.startsWith("image/")) {
-                        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+                        // 使用 URLEncoder 编码文件名，确保支持中文
+                        String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8.toString()).replace("+", "%20");
+                        String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
+                        headers.set(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
                     }
 
                     // 返回响应
