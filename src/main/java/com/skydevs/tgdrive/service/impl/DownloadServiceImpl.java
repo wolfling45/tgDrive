@@ -41,6 +41,9 @@ public class DownloadServiceImpl implements DownloadService {
             // 从 botService 获取文件的下载路径和文件名
             String fileUrl = botService.getFullDownloadPath(fileID);
             String filename = fileMapper.getFileNameByFileId(fileID);
+            if (filename.endsWith(".gif")) {
+                filename = filename.substring(0, filename.length() - 4) + ".mp4";
+            }
             if (filename == null || filename.isEmpty()) {
                 filename = botService.getFileNameByID(fileID);
             }
@@ -53,65 +56,84 @@ public class DownloadServiceImpl implements DownloadService {
             if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 inputStream = connection.getInputStream();
 
-                // 将文件内容读取为字符串
+                // 将文件内容读取为字节数组
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                 byte[] buffer = new byte[4096];
                 int bytesRead;
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     byteArrayOutputStream.write(buffer, 0, bytesRead);
                 }
-                String fileContent = byteArrayOutputStream.toString();
+                byte[] fileBytes = byteArrayOutputStream.toByteArray();
 
                 // 尝试解析为 BigFileInfo 并检查 isRecordFile 标识
+                boolean isRecordFile = false;
+                BigFileInfo record = null;
                 try {
-                    BigFileInfo record = JSON.parseObject(fileContent, BigFileInfo.class);
+                    String fileContent = new String(fileBytes, StandardCharsets.UTF_8);
+                    record = JSON.parseObject(fileContent, BigFileInfo.class);
+                    isRecordFile = record.isRecordFile();
+                } catch (Exception e) {
+                    // 忽略异常，继续处理
+                }
 
-                    // 通过 isRecordFile 判断是否为记录文件
-                    if (record.isRecordFile()) {
-                        log.info("文件名为：" + record.getFileName());
-                        log.info("检测到记录文件，开始下载并合并分片文件...");
+                if (isRecordFile && record != null) {
+                    log.info("文件名为：" + record.getFileName());
+                    log.info("检测到记录文件，开始下载并合并分片文件...");
 
-                        // 开始下载每个分片文件并进行合并
-                        ByteArrayOutputStream mergedOutputStream = new ByteArrayOutputStream();
-                        for (String partFileId : record.getFileIds()) {
-                            String partFileUrl = botService.getFullDownloadPath(partFileId);
-                            URL partUrl = new URL(partFileUrl);
-                            connection = (HttpURLConnection) partUrl.openConnection();
-                            connection.setRequestMethod("GET");
+                    // 开始下载每个分片文件并进行合并
+                    ByteArrayOutputStream mergedOutputStream = new ByteArrayOutputStream();
+                    for (String partFileId : record.getFileIds()) {
+                        String partFileUrl = botService.getFullDownloadPath(partFileId);
+                        URL partUrl = new URL(partFileUrl);
+                        HttpURLConnection partConnection = null;
+                        InputStream partInputStream = null;
+                        try {
+                            partConnection = (HttpURLConnection) partUrl.openConnection();
+                            partConnection.setRequestMethod("GET");
 
-                            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                                try (InputStream partInputStream = connection.getInputStream()) {
-                                    while ((bytesRead = partInputStream.read(buffer)) != -1) {
-                                        mergedOutputStream.write(buffer, 0, bytesRead);
-                                    }
+                            if (partConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                                partInputStream = partConnection.getInputStream();
+                                while ((bytesRead = partInputStream.read(buffer)) != -1) {
+                                    mergedOutputStream.write(buffer, 0, bytesRead);
                                 }
+                            } else {
+                                log.error("无法下载分片文件，响应码：" + partConnection.getResponseCode());
+                                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+                            }
+                        } finally {
+                            if (partInputStream != null) {
+                                partInputStream.close();
+                            }
+                            if (partConnection != null) {
+                                partConnection.disconnect();
                             }
                         }
+                    }
 
-                        // 将合并的文件字节转换为资源
-                        byte[] mergedFileBytes = mergedOutputStream.toByteArray();
-                        ByteArrayResource resource = new ByteArrayResource(mergedFileBytes);
+                    // 将合并的文件字节转换为资源
+                    byte[] mergedFileBytes = mergedOutputStream.toByteArray();
+                    ByteArrayResource resource = new ByteArrayResource(mergedFileBytes);
 
-                        // 设置响应头
-                        HttpHeaders headers = new HttpHeaders();
-                        String contentType = getContentTypeFromFilename(record.getFileName());
-                        headers.setContentType(MediaType.parseMediaType(contentType));
+                    // 设置响应头
+                    HttpHeaders headers = new HttpHeaders();
+                    String contentType = getContentTypeFromFilename(record.getFileName());
+                    headers.setContentType(MediaType.parseMediaType(contentType));
+
+                    if (!contentType.startsWith("image/") || contentType.startsWith("image/gif")) {
                         // 使用 UTF-8 编码文件名，避免中文字符问题
                         String encodedFilename = URLEncoder.encode(record.getFileName(), StandardCharsets.UTF_8.toString()).replace("+", "%20");
-
-                        // 根据浏览器是否支持 RFC 5987 来决定使用哪个 Content-Disposition 头
-                        if (!contentType.startsWith("image/")) {
-                            String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
-                            headers.set(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
-                        }
-
-                        // 返回合并后的文件
-                        return new ResponseEntity<>(resource, headers, HttpStatus.OK);
+                        String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
+                        headers.set(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
+                    } else {
+                        // 对于图片，设置 Content-Disposition 为 inline
+                        headers.setContentDisposition(ContentDisposition.inline().filename(record.getFileName(), StandardCharsets.UTF_8).build());
                     }
-                } catch (Exception e) {
+
+                    // 返回合并后的文件
+                    return new ResponseEntity<>(resource, headers, HttpStatus.OK);
+                } else {
                     // 解析失败，说明这是普通文件，直接返回文件内容
                     log.info("文件不是记录文件，直接下载文件...");
-                    byte[] fileBytes = byteArrayOutputStream.toByteArray();
 
                     // 创建 ByteArrayResource
                     ByteArrayResource resource = new ByteArrayResource(fileBytes);
@@ -121,12 +143,14 @@ public class DownloadServiceImpl implements DownloadService {
                     String contentType = getContentTypeFromFilename(filename);
                     headers.setContentType(MediaType.parseMediaType(contentType));
 
-                    // 如果是图片，不设置 Content-Disposition 以便浏览器直接显示
-                    if (!contentType.startsWith("image/")) {
+                    if (!contentType.startsWith("image/") || contentType.startsWith("image/gif")) {
                         // 使用 URLEncoder 编码文件名，确保支持中文
                         String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8.toString()).replace("+", "%20");
                         String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
                         headers.set(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
+                    } else {
+                        // 对于图片，设置 Content-Disposition 为 inline
+                        headers.setContentDisposition(ContentDisposition.inline().filename(filename, StandardCharsets.UTF_8).build());
                     }
 
                     // 返回响应
@@ -140,31 +164,65 @@ public class DownloadServiceImpl implements DownloadService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         } finally {
             // 确保连接和输入流关闭，防止资源泄漏
-            if (connection != null) {
-                connection.disconnect();
-            }
             if (inputStream != null) {
                 try {
                     inputStream.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("关闭输入流失败: " + e.getMessage());
                 }
             }
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
-
-        // 默认情况下返回内部服务器错误，避免缺少返回语句的错误
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
 
     private String getContentTypeFromFilename(String filename) {
-        // 通过文件名的扩展名来推测 MIME 类型
+        String contentType = null;
         Path path = Paths.get(filename);
         try {
-            return Files.probeContentType(path);
+            contentType = Files.probeContentType(path);
         } catch (IOException e) {
-            // 如果无法确定类型，返回 application/octet-stream
-            return "application/octet-stream";
+            log.warn("无法通过 Files.probeContentType 获取 MIME 类型: " + e.getMessage());
         }
+
+        if (contentType == null) {
+            // 手动映射常见的文件扩展名到 MIME 类型
+            String extension = getFileExtension(filename).toLowerCase();
+            switch (extension) {
+                case "gif":
+                    contentType = "image/gif";
+                    break;
+                case "jpg":
+                case "jpeg":
+                    contentType = "image/jpeg";
+                    break;
+                case "png":
+                    contentType = "image/png";
+                    break;
+                case "bmp":
+                    contentType = "image/bmp";
+                    break;
+                case "txt":
+                    contentType = "text/plain";
+                    break;
+                case "pdf":
+                    contentType = "application/pdf";
+                    break;
+                // 添加其他需要的类型
+                default:
+                    contentType = "application/octet-stream";
+                    break;
+            }
+        }
+
+        return contentType;
     }
-    //TODO: GIF直接显示
+
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return "";
+        }
+        return filename.substring(filename.lastIndexOf('.') + 1);
+    }
 }

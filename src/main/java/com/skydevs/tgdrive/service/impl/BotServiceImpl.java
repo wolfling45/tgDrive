@@ -172,6 +172,7 @@ public class BotServiceImpl implements BotService {
                         .fileId(record)
                         .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
                         .uploadTime(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
+                        //TODO: 时间错误
                         .downloadUrl(prefix + "/d/" + record)
                         .fileName(multipartFile.getOriginalFilename())
                         .build();
@@ -294,6 +295,7 @@ public class BotServiceImpl implements BotService {
         GetFileResponse getFileResponse = bot.execute(getFile);
 
         File file = getFileResponse.file();
+        log.info(bot.getFullFilePath(file));
         return bot.getFullFilePath(file);
     }
 
