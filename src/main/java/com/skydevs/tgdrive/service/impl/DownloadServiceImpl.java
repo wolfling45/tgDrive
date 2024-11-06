@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -32,6 +33,7 @@ public class DownloadServiceImpl implements DownloadService {
     @Autowired
     private FileMapper fileMapper;
 
+    //TODO: 改为流式传输
     @Override
     public ResponseEntity<Resource> downloadFile(String fileID) {
         HttpURLConnection connection = null;
@@ -115,21 +117,9 @@ public class DownloadServiceImpl implements DownloadService {
                     ByteArrayResource resource = new ByteArrayResource(mergedFileBytes);
 
                     // 设置响应头
-                    HttpHeaders headers = new HttpHeaders();
-                    String contentType = getContentTypeFromFilename(record.getFileName());
-                    headers.setContentType(MediaType.parseMediaType(contentType));
+                    HttpHeaders headers = setHeaders(record.getFileName());
 
-                    if (!contentType.startsWith("image/") || contentType.startsWith("image/gif")) {
-                        // 使用 UTF-8 编码文件名，避免中文字符问题
-                        String encodedFilename = URLEncoder.encode(record.getFileName(), StandardCharsets.UTF_8.toString()).replace("+", "%20");
-                        String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
-                        headers.set(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
-                    } else {
-                        // 对于图片，设置 Content-Disposition 为 inline
-                        headers.setContentDisposition(ContentDisposition.inline().filename(record.getFileName(), StandardCharsets.UTF_8).build());
-                    }
-
-                    // 返回合并后的文件
+                   // 返回合并后的文件
                     return new ResponseEntity<>(resource, headers, HttpStatus.OK);
                 } else {
                     // 解析失败，说明这是普通文件，直接返回文件内容
@@ -139,19 +129,7 @@ public class DownloadServiceImpl implements DownloadService {
                     ByteArrayResource resource = new ByteArrayResource(fileBytes);
 
                     // 设置响应头
-                    HttpHeaders headers = new HttpHeaders();
-                    String contentType = getContentTypeFromFilename(filename);
-                    headers.setContentType(MediaType.parseMediaType(contentType));
-
-                    if (!contentType.startsWith("image/") || contentType.startsWith("image/gif")) {
-                        // 使用 URLEncoder 编码文件名，确保支持中文
-                        String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8.toString()).replace("+", "%20");
-                        String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
-                        headers.set(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
-                    } else {
-                        // 对于图片，设置 Content-Disposition 为 inline
-                        headers.setContentDisposition(ContentDisposition.inline().filename(filename, StandardCharsets.UTF_8).build());
-                    }
+                    HttpHeaders headers = setHeaders(filename);
 
                     // 返回响应
                     return new ResponseEntity<>(resource, headers, HttpStatus.OK);
@@ -175,6 +153,27 @@ public class DownloadServiceImpl implements DownloadService {
                 connection.disconnect();
             }
         }
+    }
+
+    private HttpHeaders setHeaders(String filename) {
+        HttpHeaders headers = new HttpHeaders();
+        try {
+            String contentType = getContentTypeFromFilename(filename);
+            headers.setContentType(MediaType.parseMediaType(contentType));
+
+            if (!contentType.startsWith("image/") || contentType.startsWith("image/gif")) {
+                // 使用 URLEncoder 编码文件名，确保支持中文
+                String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8.toString()).replace("+", "%20");
+                String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
+                headers.set(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
+            } else {
+                // 对于图片，设置 Content-Disposition 为 inline
+                headers.setContentDisposition(ContentDisposition.inline().filename(filename, StandardCharsets.UTF_8).build());
+            }
+        } catch (UnsupportedEncodingException e) {
+            log.error("不支持的编码");
+        }
+        return headers;
     }
 
     private String getContentTypeFromFilename(String filename) {
