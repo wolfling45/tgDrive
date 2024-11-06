@@ -1,6 +1,7 @@
 package com.skydevs.tgdrive.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.File;
@@ -19,6 +20,7 @@ import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import com.skydevs.tgdrive.utils.UserFriendly;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -312,8 +314,19 @@ public class BotServiceImpl implements BotService {
     public PageResult getFileList(int page, int size) {
         // 设置分页
         PageHelper.startPage(page, size);
-        List<FileInfo> fileInfos = fileMapper.getAllFiles();
-        return new PageResult(fileInfos.size(), fileInfos);
+        Page<FileInfo> pageInfo = fileMapper.getAllFiles();
+        List<FileInfo> fileInfos = new ArrayList<>();
+        for (FileInfo fileInfo : pageInfo) {
+            FileInfo fileInfo1 = new FileInfo();
+            BeanUtils.copyProperties(fileInfo, fileInfo1);
+            fileInfos.add(fileInfo1);
+        }
+        // 输出分页信息以确认分页设置是否生效
+        System.out.println("分页数据总条目数：" + pageInfo.size());
+        System.out.println("当前页返回的条目数：" + fileInfos.size());
+        System.out.println("分页大小：" + pageInfo.getPageSize());
+
+        return new PageResult((int) pageInfo.getTotal(), fileInfos);
     }
 
 

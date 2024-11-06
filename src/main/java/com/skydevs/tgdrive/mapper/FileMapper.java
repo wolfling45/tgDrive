@@ -1,11 +1,10 @@
 package com.skydevs.tgdrive.mapper;
 
+import com.github.pagehelper.Page;
 import com.skydevs.tgdrive.entity.FileInfo;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
-
-import java.util.List;
 
 @Mapper
 public interface FileMapper {
@@ -21,6 +20,6 @@ public interface FileMapper {
      * 获取全部文件
      * @return
      */
-    @Select("SELECT * FROM files")
-    List<FileInfo> getAllFiles();
+    @Select("SELECT * FROM files order by upload_time desc")
+    Page<FileInfo> getAllFiles();
 }
