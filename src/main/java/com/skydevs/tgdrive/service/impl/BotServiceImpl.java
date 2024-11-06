@@ -321,11 +321,7 @@ public class BotServiceImpl implements BotService {
             BeanUtils.copyProperties(fileInfo, fileInfo1);
             fileInfos.add(fileInfo1);
         }
-        // 输出分页信息以确认分页设置是否生效
-        System.out.println("分页数据总条目数：" + pageInfo.size());
-        System.out.println("当前页返回的条目数：" + fileInfos.size());
-        System.out.println("分页大小：" + pageInfo.getPageSize());
-
+        log.info("文件分页查询");
         return new PageResult((int) pageInfo.getTotal(), fileInfos);
     }
 
