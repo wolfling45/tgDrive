@@ -20,6 +20,6 @@ public interface FileMapper {
      * 获取全部文件
      * @return
      */
-    @Select("SELECT * FROM files order by upload_time desc")
+    @Select("SELECT * FROM files order by upload_time")
     Page<FileInfo> getAllFiles();
 }
