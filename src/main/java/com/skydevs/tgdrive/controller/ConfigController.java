@@ -16,8 +16,8 @@ public class ConfigController {
     private ConfigService configService;
 
     @GetMapping()
-    public ResponseEntity<ConfigForm> getConfig(@RequestParam String filename) {
-        ConfigForm config = configService.get(filename);
+    public ResponseEntity<ConfigForm> getConfig(@RequestParam String name) {
+        ConfigForm config = configService.get(name);
         if (config == null) {
             log.error("配置获取失败，请检查文件名是否错误");
             return null;
