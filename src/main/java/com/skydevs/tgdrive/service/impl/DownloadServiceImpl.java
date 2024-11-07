@@ -6,23 +6,22 @@ import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.DownloadService;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -33,16 +32,16 @@ public class DownloadServiceImpl implements DownloadService {
     @Autowired
     private FileMapper fileMapper;
 
+    private final OkHttpClient okHttpClient = new OkHttpClient();
+
     //TODO: 改为流式传输
     @Override
-    public ResponseEntity<Resource> downloadFile(String fileID) {
-        HttpURLConnection connection = null;
-        InputStream inputStream = null;
-
+    public ResponseEntity<StreamingResponseBody> downloadFile(String fileID) {
         try {
             // 从 botService 获取文件的下载路径和文件名
             String fileUrl = botService.getFullDownloadPath(fileID);
             String filename = fileMapper.getFileNameByFileId(fileID);
+            // 上传到tg的gif会被转换为MP4
             if (filename.endsWith(".gif")) {
                 filename = filename.substring(0, filename.length() - 4) + ".mp4";
             }
@@ -50,108 +49,142 @@ public class DownloadServiceImpl implements DownloadService {
                 filename = botService.getFileNameByID(fileID);
             }
 
-            // 下载文件
-            URL url = new URL(fileUrl);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
+            // 设置响应头
+            HttpHeaders headers = setHeaders(filename);
 
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                inputStream = connection.getInputStream();
+            // 创建 OkHttp请求
+            Request request = new Request.Builder()
+                    .url(fileUrl)
+                    .get()
+                    .build();
 
-                // 将文件内容读取为字节数组
-                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    byteArrayOutputStream.write(buffer, 0, bytesRead);
-                }
-                byte[] fileBytes = byteArrayOutputStream.toByteArray();
+            // 执行请求
+            Call call = okHttpClient.newCall(request);
+            Response response = call.execute();
 
-                // 尝试解析为 BigFileInfo 并检查 isRecordFile 标识
-                boolean isRecordFile = false;
-                BigFileInfo record = null;
-                try {
-                    String fileContent = new String(fileBytes, StandardCharsets.UTF_8);
-                    record = JSON.parseObject(fileContent, BigFileInfo.class);
-                    isRecordFile = record.isRecordFile();
-                } catch (Exception e) {
-                    // 忽略异常，继续处理
-                }
-
-                if (isRecordFile && record != null) {
-                    log.info("文件名为：" + record.getFileName());
-                    log.info("检测到记录文件，开始下载并合并分片文件...");
-
-                    // 开始下载每个分片文件并进行合并
-                    ByteArrayOutputStream mergedOutputStream = new ByteArrayOutputStream();
-                    for (String partFileId : record.getFileIds()) {
-                        String partFileUrl = botService.getFullDownloadPath(partFileId);
-                        URL partUrl = new URL(partFileUrl);
-                        HttpURLConnection partConnection = null;
-                        InputStream partInputStream = null;
-                        try {
-                            partConnection = (HttpURLConnection) partUrl.openConnection();
-                            partConnection.setRequestMethod("GET");
-
-                            if (partConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                                partInputStream = partConnection.getInputStream();
-                                while ((bytesRead = partInputStream.read(buffer)) != -1) {
-                                    mergedOutputStream.write(buffer, 0, bytesRead);
-                                }
-                            } else {
-                                log.error("无法下载分片文件，响应码：" + partConnection.getResponseCode());
-                                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-                            }
-                        } finally {
-                            if (partInputStream != null) {
-                                partInputStream.close();
-                            }
-                            if (partConnection != null) {
-                                partConnection.disconnect();
-                            }
-                        }
-                    }
-
-                    // 将合并的文件字节转换为资源
-                    byte[] mergedFileBytes = mergedOutputStream.toByteArray();
-                    ByteArrayResource resource = new ByteArrayResource(mergedFileBytes);
-
-                    // 设置响应头
-                    HttpHeaders headers = setHeaders(record.getFileName());
-
-                   // 返回合并后的文件
-                    return new ResponseEntity<>(resource, headers, HttpStatus.OK);
-                } else {
-                    // 解析失败，说明这是普通文件，直接返回文件内容
-                    log.info("文件不是记录文件，直接下载文件...");
-
-                    // 创建 ByteArrayResource
-                    ByteArrayResource resource = new ByteArrayResource(fileBytes);
-
-                    // 设置响应头
-                    HttpHeaders headers = setHeaders(filename);
-
-                    // 返回响应
-                    return new ResponseEntity<>(resource, headers, HttpStatus.OK);
-                }
-            } else {
+            // 请求失败
+            if (!response.isSuccessful()) {
+                log.error("无法下载文件，响应码：" + response.code());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
             }
-        } catch (IOException e) {
-            log.error("下载文件失败: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        } finally {
-            // 确保连接和输入流关闭，防止资源泄漏
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    log.error("关闭输入流失败: " + e.getMessage());
+
+            ResponseBody responseBody = response.body();
+            if (responseBody == null) {
+                log.error("响应体为空");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            }
+
+            InputStream inputStream = responseBody.byteStream();
+
+            // 尝试解析为 BigFileInfo 并检查 isRecordFile 标识
+            boolean isRecordFile = false;
+            BigFileInfo record = null;
+            try {
+                String fileContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                record = JSON.parseObject(fileContent, BigFileInfo.class);
+                isRecordFile = record.isRecordFile();
+                // 重新获取输入流，因为 readAllBytes 已经读取了流
+                responseBody.close();
+            } catch (Exception e) {
+                log.info("文件不是 BigFileInfo类型，作为普通文件处理");
+            }
+
+            if (isRecordFile && record != null) {
+                log.info("文件名为：" + record.getFileName());
+                log.info("检测到记录文件，开始下载并合并分片文件...");
+
+                List<String> partFileIds = record.getFileIds();
+
+                StreamingResponseBody streamingResponseBody = outputStream -> {
+                    // 开始下载每个分片文件并进行合并
+                    try {
+                        for (String partFileId : partFileIds) {
+                            String partFileUrl = botService.getFullDownloadPath(partFileId);
+                            Request partRequest = new Request.Builder()
+                                    .url(partFileUrl)
+                                    .get()
+                                    .build();
+
+                            Call partcall = okHttpClient.newCall(partRequest);
+                            Response partResponse = partcall.execute();
+
+                            if (!partResponse.isSuccessful()) {
+                                log.error("无法下载分片文件，响应码：" + partResponse.code());
+                                throw new IOException("无法下载分片文件，响应码：" + partResponse.code());
+                            }
+
+                            ResponseBody partResponseBody = partResponse.body();
+                            if (partResponseBody == null) {
+                                log.error("分片响应体为空");
+                                throw new IOException("分片响应体为空");
+                            }
+
+                            try (InputStream partInputStream = partResponseBody.byteStream()) {
+                                byte[] buffer = new byte[4096];
+                                int byteRead;
+                                while ((byteRead = partInputStream.read(buffer)) != -1) {
+                                    outputStream.write(buffer, 0, byteRead);
+                                }
+                            } finally {
+                                partResponseBody.close();
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.error("分片文件合并失败: " + e.getMessage(), e);
+                        throw e;
+                    }
+                };
+
+                return ResponseEntity.ok()
+                        .headers(headers)
+                        .contentType(MediaType.parseMediaType(getContentTypeFromFilename(filename)))
+                        .body(streamingResponseBody);
+            } else {
+                // 解析失败，说明这是普通文件，直接返回文件内容
+                log.info("文件不是记录文件，直接下载文件...");
+
+                // 重新创建请求以获取输入流，因为之前可能已读取部分流
+                Request normalRequest = new Request.Builder()
+                        .url(fileUrl)
+                        .get()
+                        .build();
+
+                Call normalCall = okHttpClient.newCall(normalRequest);
+                Response normalResponse = normalCall.execute();
+
+                if (!normalResponse.isSuccessful()) {
+                    log.error("无法下载文件，响应码：" + normalResponse.code());
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
                 }
+
+                ResponseBody normalResponseBody = normalResponse.body();
+                if (normalResponseBody == null) {
+                    log.error("响应体为空");
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+                }
+
+                InputStream normalInputStream = normalResponseBody.byteStream();
+
+                StreamingResponseBody streamingResponseBody = outputStream -> {
+                    try (InputStream is = normalInputStream) {
+                        byte[] buffer = new byte[4096];
+                        int byteRead;
+                        while ((byteRead = is.read(buffer)) != -1) {
+                            outputStream.write(buffer, 0, byteRead);
+                        }
+                    } finally {
+                        normalResponseBody.close();
+                    }
+                };
+
+                return ResponseEntity.ok()
+                        .headers(headers)
+                        .contentType(MediaType.parseMediaType(getContentTypeFromFilename(filename)))
+                        .body(streamingResponseBody);
             }
-            if (connection != null) {
-                connection.disconnect();
-            }
+        } catch (Exception e) {
+            log.error("下载文件失败：" + e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
@@ -214,7 +247,6 @@ public class DownloadServiceImpl implements DownloadService {
                     break;
             }
         }
-
         return contentType;
     }
 

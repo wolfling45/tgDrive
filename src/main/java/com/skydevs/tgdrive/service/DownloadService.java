@@ -1,7 +1,7 @@
 package com.skydevs.tgdrive.service;
 
-import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 public interface DownloadService {
     /**
@@ -9,5 +9,5 @@ public interface DownloadService {
      * @param fileID
      * @return
      */
-    ResponseEntity<Resource> downloadFile(String fileID);
+    ResponseEntity<StreamingResponseBody> downloadFile(String fileID);
 }
