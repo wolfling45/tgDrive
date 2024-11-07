@@ -40,7 +40,9 @@ public class DownloadServiceImpl implements DownloadService {
             // 从 botService 获取文件的下载路径和文件名
             String fileUrl = botService.getFullDownloadPath(fileID);
             String filename = fileMapper.getFileNameByFileId(fileID);
-
+            if (filename != null) {
+                filename = botService.getFileNameByID(fileID);
+            }
             // 上传到tg的gif会被转换为MP4
             if (filename.endsWith(".gif")) {
                 filename = filename.substring(0, filename.length() - 4) + ".mp4";
