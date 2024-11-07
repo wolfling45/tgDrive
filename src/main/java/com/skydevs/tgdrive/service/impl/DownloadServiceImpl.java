@@ -5,6 +5,7 @@ import com.skydevs.tgdrive.entity.BigFileInfo;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.DownloadService;
+import com.skydevs.tgdrive.utils.OkHttpClientFactory;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,14 +33,14 @@ public class DownloadServiceImpl implements DownloadService {
     @Autowired
     private FileMapper fileMapper;
 
-    private final OkHttpClient okHttpClient = new OkHttpClient();
-
+    private final OkHttpClient okHttpClient = OkHttpClientFactory.createClient();
     @Override
     public ResponseEntity<StreamingResponseBody> downloadFile(String fileID) {
         try {
             // 从 botService 获取文件的下载路径和文件名
             String fileUrl = botService.getFullDownloadPath(fileID);
             String filename = fileMapper.getFileNameByFileId(fileID);
+
             // 上传到tg的gif会被转换为MP4
             if (filename.endsWith(".gif")) {
                 filename = filename.substring(0, filename.length() - 4) + ".mp4";
