@@ -10,6 +10,8 @@ spring:
     view:
       prefix: /
       suffix: html
+    async:
+      request-timeout: -1
   profiles:
     active: dev
   main:

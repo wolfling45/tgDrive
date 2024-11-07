@@ -34,7 +34,6 @@ public class DownloadServiceImpl implements DownloadService {
 
     private final OkHttpClient okHttpClient = new OkHttpClient();
 
-    //TODO: 改为流式传输
     @Override
     public ResponseEntity<StreamingResponseBody> downloadFile(String fileID) {
         try {
@@ -125,6 +124,9 @@ public class DownloadServiceImpl implements DownloadService {
                                 while ((byteRead = partInputStream.read(buffer)) != -1) {
                                     outputStream.write(buffer, 0, byteRead);
                                 }
+                            }catch (Exception e) {
+                                log.info("文件下载终止");
+                                log.info(e.getMessage(), e);
                             } finally {
                                 partResponseBody.close();
                             }
@@ -172,7 +174,11 @@ public class DownloadServiceImpl implements DownloadService {
                         while ((byteRead = is.read(buffer)) != -1) {
                             outputStream.write(buffer, 0, byteRead);
                         }
-                    } finally {
+                    }catch (Exception e) {
+                        log.info("文件下载终止");
+                        log.info(e.getMessage(), e);
+                    }
+                    finally {
                         normalResponseBody.close();
                     }
                 };
@@ -194,14 +200,14 @@ public class DownloadServiceImpl implements DownloadService {
             String contentType = getContentTypeFromFilename(filename);
             headers.setContentType(MediaType.parseMediaType(contentType));
 
-            if (!contentType.startsWith("image/") || contentType.startsWith("image/gif")) {
+            if (contentType.startsWith("image/") || contentType.startsWith("video/")) {
+                // 对于图片和视频，设置 Content-Disposition 为 inline
+                headers.setContentDisposition(ContentDisposition.inline().filename(filename, StandardCharsets.UTF_8).build());
+           } else {
                 // 使用 URLEncoder 编码文件名，确保支持中文
                 String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8.toString()).replace("+", "%20");
                 String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
                 headers.set(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
-            } else {
-                // 对于图片，设置 Content-Disposition 为 inline
-                headers.setContentDisposition(ContentDisposition.inline().filename(filename, StandardCharsets.UTF_8).build());
             }
         } catch (UnsupportedEncodingException e) {
             log.error("不支持的编码");
@@ -240,6 +246,9 @@ public class DownloadServiceImpl implements DownloadService {
                     break;
                 case "pdf":
                     contentType = "application/pdf";
+                    break;
+                case "mp4":
+                    contentType = "video/mp4";
                     break;
                 // 添加其他需要的类型
                 default:
