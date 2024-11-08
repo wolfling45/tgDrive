@@ -206,7 +206,7 @@ public class DownloadServiceImpl implements DownloadService {
             if (contentType.startsWith("image/") || contentType.startsWith("video/")) {
                 // 对于图片和视频，设置 Content-Disposition 为 inline
                 headers.setContentDisposition(ContentDisposition.inline().filename(filename, StandardCharsets.UTF_8).build());
-           } else {
+            } else {
                 // 使用 URLEncoder 编码文件名，确保支持中文
                 String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8.toString()).replace("+", "%20");
                 String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;

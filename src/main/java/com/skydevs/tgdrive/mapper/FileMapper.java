@@ -20,7 +20,7 @@ public interface FileMapper {
      * 获取全部文件
      * @return
      */
-    @Select("SELECT * FROM files order by upload_time")
+    @Select("SELECT * FROM files order by upload_time desc ")
     Page<FileInfo> getAllFiles();
 
     @Select("SELECT file_name FROM files where file_id = #{fileId}")
