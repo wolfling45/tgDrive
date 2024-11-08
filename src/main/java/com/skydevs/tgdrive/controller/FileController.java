@@ -34,6 +34,7 @@ public class FileController {
     @GetMapping("/config/{filename}")
     public ResponseEntity<String> loadConfig(@PathVariable("filename") String filename) {
         botService.setBotToken(filename);
+        //TODO: 加载配置失败
         log.info("加载配置成功");
         return ResponseEntity.ok("加载配置成功");
     }

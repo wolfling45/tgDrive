@@ -101,27 +101,7 @@ public class DownloadServiceImpl implements DownloadService {
                     // 开始下载每个分片文件并进行合并
                     try {
                         for (String partFileId : partFileIds) {
-                            String partFileUrl = botService.getFullDownloadPath(partFileId);
-                            Request partRequest = new Request.Builder()
-                                    .url(partFileUrl)
-                                    .get()
-                                    .build();
-
-                            Call partcall = okHttpClient.newCall(partRequest);
-                            Response partResponse = partcall.execute();
-
-                            if (!partResponse.isSuccessful()) {
-                                log.error("无法下载分片文件，响应码：" + partResponse.code());
-                                throw new IOException("无法下载分片文件，响应码：" + partResponse.code());
-                            }
-
-                            ResponseBody partResponseBody = partResponse.body();
-                            if (partResponseBody == null) {
-                                log.error("分片响应体为空");
-                                throw new IOException("分片响应体为空");
-                            }
-
-                            try (InputStream partInputStream = partResponseBody.byteStream()) {
+                            try (InputStream partInputStream = downloadFileByte(partFileId).byteStream()){
                                 byte[] buffer = new byte[4096];
                                 int byteRead;
                                 while ((byteRead = partInputStream.read(buffer)) != -1) {
@@ -130,8 +110,6 @@ public class DownloadServiceImpl implements DownloadService {
                             }catch (Exception e) {
                                 log.info("文件下载终止");
                                 log.info(e.getMessage(), e);
-                            } finally {
-                                partResponseBody.close();
                             }
                         }
                     } catch (Exception e) {
@@ -148,30 +126,8 @@ public class DownloadServiceImpl implements DownloadService {
                 // 解析失败，说明这是普通文件，直接返回文件内容
                 log.info("文件不是记录文件，直接下载文件...");
 
-                // 重新创建请求以获取输入流，因为之前可能已读取部分流
-                Request normalRequest = new Request.Builder()
-                        .url(fileUrl)
-                        .get()
-                        .build();
-
-                Call normalCall = okHttpClient.newCall(normalRequest);
-                Response normalResponse = normalCall.execute();
-
-                if (!normalResponse.isSuccessful()) {
-                    log.error("无法下载文件，响应码：" + normalResponse.code());
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-                }
-
-                ResponseBody normalResponseBody = normalResponse.body();
-                if (normalResponseBody == null) {
-                    log.error("响应体为空");
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-                }
-
-                InputStream normalInputStream = normalResponseBody.byteStream();
-
                 StreamingResponseBody streamingResponseBody = outputStream -> {
-                    try (InputStream is = normalInputStream) {
+                    try (InputStream is = downloadFileByte(fileID).byteStream()) {
                         byte[] buffer = new byte[4096];
                         int byteRead;
                         while ((byteRead = is.read(buffer)) != -1) {
@@ -180,9 +136,6 @@ public class DownloadServiceImpl implements DownloadService {
                     }catch (Exception e) {
                         log.info("文件下载终止");
                         log.info(e.getMessage(), e);
-                    }
-                    finally {
-                        normalResponseBody.close();
                     }
                 };
 
@@ -216,6 +169,28 @@ public class DownloadServiceImpl implements DownloadService {
             log.error("不支持的编码");
         }
         return headers;
+    }
+
+    private ResponseBody downloadFileByte(String partFileId) throws IOException {
+        String partFileUrl = botService.getFullDownloadPath(partFileId);
+        Request partRequest = new Request.Builder()
+                .url(partFileUrl)
+                .get()
+                .build();
+
+        Response response = okHttpClient.newCall(partRequest).execute();
+        if (!response.isSuccessful()) {
+            log.error("无法下载分片文件，响应码：" + response.code());
+            throw new IOException("无法下载分片文件，响应码：" + response.code());
+        }
+
+        ResponseBody responseBody = response.body();
+        if (responseBody == null) {
+            log.error("分片响应体为空");
+            throw new IOException("分片响应体为空");
+        }
+
+        return responseBody;
     }
 
     private String getContentTypeFromFilename(String filename) {
