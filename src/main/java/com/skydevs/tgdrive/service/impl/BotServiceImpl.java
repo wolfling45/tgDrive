@@ -34,6 +34,9 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
@@ -90,7 +93,8 @@ public class BotServiceImpl implements BotService {
      */
     private List<String> sendFileStreamInChunks(InputStream inputStream, String filename) {
         byte[] buffer = new byte[MAX_FILE_SIZE]; // 10MB 缓冲区
-        List<String> fileIds = new ArrayList<>();
+        List<CompletableFuture<String>> futures = new ArrayList<>();
+        ExecutorService executorService = Executors.newFixedThreadPool(5); // 线程池大小
 
         try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream)) {
             int byteRead;
@@ -101,34 +105,46 @@ public class BotServiceImpl implements BotService {
                 String partName;
                 if (partIndex == 0) {
                     partName = filename;
-                    partIndex++;
                 } else {
-                    partName = filename + "_part" + partIndex++;
+                    partName = filename + "_part" + partIndex;
                 }
+                partIndex++;
 
                 // 取当前分块数据
                 byte[] chunkData = Arrays.copyOf(buffer, byteRead);
 
-                // 发送当前块
-                SendDocument sendDocument = new SendDocument(chatId, chunkData).fileName(partName);
-                SendResponse response = bot.execute(sendDocument);
-
-                // 检查响应
-                if (response.isOk() && response.message() != null && (response.message().document() != null || response.message().sticker() != null)) {
-                    String fileID = response.message().document().fileId() != null ? response.message().document().fileId() : response.message().sticker().fileId();
-                    log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
-                    fileIds.add(fileID);
-                } else {
-                    log.error("分块上传失败，响应信息：{}", response.description());
-                    throw new RuntimeException("分块上传失败");
-                }
+                // 提交上传任务，使用CompletableFuture
+                CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> uploadChunk(chunkData, partName), executorService);
+                futures.add(future);
             }
+
+            // 等待所有任务完成并按顺序获取结果
+            List<String> fileIds = new ArrayList<>();
+            for (CompletableFuture<String> future : futures) {
+                fileIds.add(future.join()); // 按顺序等待结果
+            }
+            return fileIds;
         } catch (IOException e) {
             log.error("文件流读取失败：{}", e.getMessage());
             throw new RuntimeException("文件流读取失败");
+        } finally {
+            executorService.shutdown();
         }
+    }
 
-        return fileIds;
+    private String uploadChunk(byte[] chunkData, String partName) {
+        SendDocument sendDocument = new SendDocument(chatId, chunkData).fileName(partName);
+        SendResponse response = bot.execute(sendDocument);
+
+        // 检查响应
+        if (response.isOk() && response.message() != null && (response.message().document() != null || response.message().sticker() != null)) {
+            String fileID = response.message().document().fileId() != null ? response.message().document().fileId() : response.message().sticker().fileId();
+            log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
+            return fileID;
+        } else {
+            log.error("分块上传失败，响应信息：{}", response.description());
+            throw new RuntimeException("分块上传失败");
+        }
     }
 
     /**
@@ -137,7 +153,6 @@ public class BotServiceImpl implements BotService {
      * @param prefix
      * @return
      */
-    //TODO: 改用多线程加速上传
     @Override
     public String uploadFile(MultipartFile multipartFile, String prefix) {
         try {
