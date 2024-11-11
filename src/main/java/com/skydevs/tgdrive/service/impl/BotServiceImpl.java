@@ -25,15 +25,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -83,133 +82,97 @@ public class BotServiceImpl implements BotService {
         bot = new TelegramBot(botToken);
     }
 
-    private String sendFileBytes(byte[] fileBytes, String filename) {
-        // 使用 Telegram Bot 直接发送字节数组
-        SendDocument sendDocument = new SendDocument(chatId, fileBytes)
-                .fileName(filename);// 设置文档的文件名
+    /**
+     * 分块上传文件
+     * @param inputStream
+     * @param filename
+     * @return
+     */
+    private List<String> sendFileStreamInChunks(InputStream inputStream, String filename) {
+        byte[] buffer = new byte[MAX_FILE_SIZE]; // 10MB 缓冲区
+        List<String> fileIds = new ArrayList<>();
 
-        try {
-            SendResponse response = bot.execute(sendDocument);
-            // 检查 response 是否成功
-            if (response.isOk()) {
-                Message message = response.message();
-                String fileID;
-                if (message.document() != null) {
-                    fileID = message.document().fileId();
-                    log.info("文件上传成功，File ID: " + fileID);
-                    return fileID;
-                } else if (message.sticker().fileId() != null) {
-                    fileID = message.sticker().fileId();
-                    log.info("文件上传成功，File ID: " + fileID);
-                    return fileID;
+        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream)) {
+            int byteRead;
+            int partIndex = 0;
+
+            while ((byteRead = bufferedInputStream.read(buffer)) > 0) {
+                // 当前块的文件名，第一块为原名
+                String partName;
+                if (partIndex == 0) {
+                    partName = filename;
+                    partIndex++;
                 } else {
-                    // 处理 message 或 document 为 null 的情况
-                    log.error("sticker or document is null. Response: {}", response);
+                    partName = filename + "_part" + partIndex++;
                 }
-            } else {
-                // 处理 API 请求失败的情况
-                log.error("Failed to send document. Error: {}", response.description());
+
+                // 取当前分块数据
+                byte[] chunkData = Arrays.copyOf(buffer, byteRead);
+
+                // 发送当前块
+                SendDocument sendDocument = new SendDocument(chatId, chunkData).fileName(partName);
+                SendResponse response = bot.execute(sendDocument);
+
+                // 检查响应
+                if (response.isOk() && response.message() != null && (response.message().document() != null || response.message().sticker() != null)) {
+                    String fileID = response.message().document().fileId() != null ? response.message().document().fileId() : response.message().sticker().fileId();
+                    log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
+                    fileIds.add(fileID);
+                } else {
+                    log.error("分块上传失败，响应信息：{}", response.description());
+                    throw new RuntimeException("分块上传失败");
+                }
             }
-        } catch (RuntimeException e) {
-            log.error("Failed to send document. network error");
+        } catch (IOException e) {
+            log.error("文件流读取失败：{}", e.getMessage());
+            throw new RuntimeException("文件流读取失败");
         }
-       return null;
+
+        return fileIds;
     }
 
     /**
      * 上传文件
      * @param multipartFile
+     * @param prefix
      * @return
      */
     //TODO: 改用多线程加速上传
     @Override
     public String uploadFile(MultipartFile multipartFile, String prefix) {
         try {
-            // 判断文件大小是否大于 10MB
-            if (multipartFile.getSize() > MAX_FILE_SIZE) {
-                log.info("文件大于 10MB，开始切割并上传...{}", userFriendly.humanReadableFileSize(multipartFile.getSize()));
-
-                // 将文件切割为小于等于 10MB 的部分
-                List<java.io.File> fileParts = splitFile(multipartFile);
-
-                // 保存每个部分的 file_id
-                List<String> fileIds = new ArrayList<>();
-
-                // 上传每个文件部分并保存 file_id
-                int retryCount = 3;
-                for (java.io.File part : fileParts) {
-                    byte[] fileBytes = Files.readAllBytes(part.toPath());
-                    String fileID = null;
-
-                    try {
-                        for (int i = 0; i < retryCount; i++) {
-                            fileID = sendFileBytes(fileBytes, part.getName());
-                            if (fileID != null) {
-                                break;
-                            }
-                            log.warn("上传失败，正在重试第" + (i + 1) + "次");
-                        }
-
-                        if (fileID == null) {
-                            log.error("分片上传失败，文件名: " + part.getName() + "，整个文件终止上传");
-                            throw new RuntimeException("上传失败，终止上传流程。文件名: " + multipartFile.getOriginalFilename());
-                        }
-                        log.info("分片上传成功，File ID: " + fileID);
-                        fileIds.add(fileID);
-                    } catch (RuntimeException e) {
-                        System.out.println(e.getMessage());
-                        return null;
-                    } finally {
-                        // 删除本地临时分片文件
-                        part.delete();
-                    }
-                }
-                // 创建一个记录文件，包含所有分片的 file_id 信息
-                String record = createRecordFile(multipartFile.getOriginalFilename(), multipartFile.getSize(), fileIds);
-
-                // 存入数据库
+            List<String> fileIds = sendFileStreamInChunks(multipartFile.getInputStream(), multipartFile.getOriginalFilename());
+            if (fileIds.size() == 1) {
+                String fileID = fileIds.get(0);
                 FileInfo fileInfo = FileInfo.builder()
-                        .fileId(record)
+                        .fileId(fileID)
                         .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
                         .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
-                        .downloadUrl(prefix + "/d/" + record)
+                        .downloadUrl(prefix + "/d/" + fileID)
                         .fileName(multipartFile.getOriginalFilename())
                         .build();
                 fileMapper.insertFile(fileInfo);
-                return "/d/" + record; // 返回记录文件的下载路径
+                return "/d/" + fileID;
             } else {
-                // 文件小于等于 10MB，直接上传
-                byte[] fileBytes = multipartFile.getBytes();
-
-                String fileID = null;
-                fileID = sendFileBytes(fileBytes, multipartFile.getOriginalFilename());
-                try {
-                    if (fileID != null) {
-                        // 存入数据库
-                        FileInfo fileInfo = FileInfo.builder()
-                                .fileId(fileID)
-                                .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
-                                .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
-                                .downloadUrl(prefix + "/d/" + fileID)
-                                .fileName(multipartFile.getOriginalFilename())
-                                .build();
-                        fileMapper.insertFile(fileInfo);
-                        return "/d/" + fileID;
-                    } else {
-                        throw new RuntimeException("文件上传失败");
-                    }
-                } catch (RuntimeException e) {
-                    log.error(e.getMessage());
-                }
+                String fileID = createRecordFile(multipartFile.getOriginalFilename(), multipartFile.getSize(), fileIds);
+                FileInfo fileInfo = FileInfo.builder()
+                        .fileId(fileID)
+                        .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
+                        .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
+                        .downloadUrl(prefix + "/d/" + fileID)
+                        .fileName(multipartFile.getOriginalFilename())
+                        .build();
+                fileMapper.insertFile(fileInfo);
+                return "/d/" + fileID;
             }
-        } catch (IOException e) {
-            log.error("文件上传失败: " + e.getMessage());
+        }catch (IOException e) {
+            log.error("文件上传失败，响应信息：{}", e.getMessage());
+            throw new RuntimeException("文件上传失败");
         }
-        return null;
     }
 
     /**
-     * 生成上传文件
+     * 生成recordFile
      * @param originalFileName
      * @param fileSize
      * @param fileIds
@@ -248,40 +211,6 @@ public class BotServiceImpl implements BotService {
         Files.deleteIfExists(tempFile);
 
         return recordFileId;
-    }
-
-
-    /**
-     * 拆分大文件
-     * @param multipartFile
-     * @return
-     * @throws IOException
-     */
-    public List<java.io.File> splitFile(MultipartFile multipartFile) throws IOException {
-        List<java.io.File> parts = new ArrayList<>();
-
-        // 将 MultipartFile 转为本地文件
-        java.io.File tempFile = java.io.File.createTempFile("temp", multipartFile.getOriginalFilename());
-        multipartFile.transferTo(tempFile);
-
-        byte[] buffer = new byte[MAX_FILE_SIZE];
-        int partNumber = 1;
-
-        try (FileInputStream fis = new FileInputStream(tempFile)) {
-            int bytesRead;
-            while ((bytesRead = fis.read(buffer)) > 0) {
-                java.io.File partFile = new java.io.File(tempFile.getParent(), tempFile.getName() + ".part" + partNumber++);
-                try (FileOutputStream fos = new FileOutputStream(partFile)) {
-                    fos.write(buffer, 0, bytesRead);
-                    parts.add(partFile);
-                }
-            }
-        }
-
-        // 删除临时文件
-        tempFile.delete();
-
-        return parts;
     }
 
     /**
