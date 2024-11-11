@@ -171,8 +171,7 @@ public class BotServiceImpl implements BotService {
                 FileInfo fileInfo = FileInfo.builder()
                         .fileId(record)
                         .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
-                        .uploadTime(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
-                        //TODO: 时间错误
+                        .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
                         .downloadUrl(prefix + "/d/" + record)
                         .fileName(multipartFile.getOriginalFilename())
                         .build();
@@ -190,7 +189,7 @@ public class BotServiceImpl implements BotService {
                         FileInfo fileInfo = FileInfo.builder()
                                 .fileId(fileID)
                                 .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
-                                .uploadTime(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
+                                .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
                                 .downloadUrl(prefix + "/d/" + fileID)
                                 .fileName(multipartFile.getOriginalFilename())
                                 .build();
@@ -312,6 +311,12 @@ public class BotServiceImpl implements BotService {
         return file.filePath();
     }
 
+    /**
+     * 获取文件分页
+     * @param page
+     * @param size
+     * @return
+     */
     @Override
     public PageResult getFileList(int page, int size) {
         // 设置分页
