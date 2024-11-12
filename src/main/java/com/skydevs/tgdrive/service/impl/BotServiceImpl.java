@@ -25,7 +25,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,9 +36,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 @Service
 @Slf4j
@@ -95,26 +95,32 @@ public class BotServiceImpl implements BotService {
         byte[] buffer = new byte[MAX_FILE_SIZE]; // 10MB 缓冲区
         List<CompletableFuture<String>> futures = new ArrayList<>();
         ExecutorService executorService = Executors.newFixedThreadPool(5); // 线程池大小
+        Semaphore semaphore = new Semaphore(5); // 控制同时运行的任务数量
 
         try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream)) {
             int byteRead;
             int partIndex = 0;
 
             while ((byteRead = bufferedInputStream.read(buffer)) > 0) {
+                semaphore.acquire(); // 获取许可，若没有可用许可则阻塞
+
                 // 当前块的文件名，第一块为原名
-                String partName;
-                if (partIndex == 0) {
-                    partName = filename;
-                } else {
-                    partName = filename + "_part" + partIndex;
-                }
+                String partName = (partIndex == 0) ? filename : filename + "_part" + partIndex;
                 partIndex++;
 
                 // 取当前分块数据
                 byte[] chunkData = Arrays.copyOf(buffer, byteRead);
 
                 // 提交上传任务，使用CompletableFuture
-                CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> uploadChunk(chunkData, partName), executorService);
+                CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return uploadChunk(chunkData, partName);
+                    } finally {
+                        Arrays.fill(chunkData, (byte) 0);
+                        System.gc();
+                        semaphore.release(); // 在任务完成后释放信号量
+                    }
+                }, executorService);
                 futures.add(future);
             }
 
@@ -124,9 +130,9 @@ public class BotServiceImpl implements BotService {
                 fileIds.add(future.join()); // 按顺序等待结果
             }
             return fileIds;
-        } catch (IOException e) {
-            log.error("文件流读取失败：{}", e.getMessage());
-            throw new RuntimeException("文件流读取失败");
+        } catch (IOException | InterruptedException e) {
+            log.error("文件流读取失败或上传失败：{}", e.getMessage());
+            throw new RuntimeException("文件流读取失败或上传");
         } finally {
             executorService.shutdown();
         }
@@ -155,27 +161,30 @@ public class BotServiceImpl implements BotService {
      */
     @Override
     public String uploadFile(MultipartFile multipartFile, String prefix) {
-        try (InputStream inputStream = multipartFile.getInputStream()){
-            List<String> fileIds = sendFileStreamInChunks(inputStream, multipartFile.getOriginalFilename());
+        try {
+            InputStream inputStream = multipartFile.getInputStream();
+            String filename = multipartFile.getOriginalFilename();
+            Long size = multipartFile.getSize();
+            List<String> fileIds = sendFileStreamInChunks(inputStream, filename);
             if (fileIds.size() == 1) {
                 String fileID = fileIds.get(0);
                 FileInfo fileInfo = FileInfo.builder()
                         .fileId(fileID)
-                        .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
+                        .size(userFriendly.humanReadableFileSize(size))
                         .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
                         .downloadUrl(prefix + "/d/" + fileID)
-                        .fileName(multipartFile.getOriginalFilename())
+                        .fileName(filename)
                         .build();
                 fileMapper.insertFile(fileInfo);
                 return "/d/" + fileID;
             } else {
-                String fileID = createRecordFile(multipartFile.getOriginalFilename(), multipartFile.getSize(), fileIds);
+                String fileID = createRecordFile(filename, size, fileIds);
                 FileInfo fileInfo = FileInfo.builder()
                         .fileId(fileID)
-                        .size(userFriendly.humanReadableFileSize(multipartFile.getSize()))
+                        .size(userFriendly.humanReadableFileSize(size))
                         .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
                         .downloadUrl(prefix + "/d/" + fileID)
-                        .fileName(multipartFile.getOriginalFilename())
+                        .fileName(filename)
                         .build();
                 fileMapper.insertFile(fileInfo);
                 return "/d/" + fileID;

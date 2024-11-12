@@ -70,7 +70,7 @@ public class FileController {
                 uploadFile.setFileName(file.getOriginalFilename());
                 uploadFile.setDownloadLink(downloadUrl);
                 uploadFiles.add(uploadFile);
-            } else {
+           } else {
                 uploadFile.setFileName("文件不存在");
             }
         }

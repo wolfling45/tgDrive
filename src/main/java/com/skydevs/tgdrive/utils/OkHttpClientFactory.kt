@@ -9,7 +9,7 @@ object OkHttpClientFactory {
     @JvmStatic
     fun createClient(): OkHttpClient {
         // 自定义连接池设置
-        val connectionPool = ConnectionPool(50, 5, TimeUnit.MINUTES)
+        val connectionPool = ConnectionPool(5, 5, TimeUnit.MINUTES)
 
         // 创建并返回 OkHttpClient 实例
         return OkHttpClient.Builder()
