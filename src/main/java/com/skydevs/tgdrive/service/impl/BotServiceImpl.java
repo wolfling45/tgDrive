@@ -94,8 +94,8 @@ public class BotServiceImpl implements BotService {
     private List<String> sendFileStreamInChunks(InputStream inputStream, String filename) {
         byte[] buffer = new byte[MAX_FILE_SIZE]; // 10MB 缓冲区
         List<CompletableFuture<String>> futures = new ArrayList<>();
-        ExecutorService executorService = Executors.newFixedThreadPool(5); // 线程池大小
-        Semaphore semaphore = new Semaphore(5); // 控制同时运行的任务数量
+        ExecutorService executorService = Executors.newFixedThreadPool(10); // 线程池大小
+        Semaphore semaphore = new Semaphore(10); // 控制同时运行的任务数量
 
         try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream)) {
             int byteRead;
