@@ -2,6 +2,7 @@ package com.skydevs.tgdrive.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.skydevs.tgdrive.entity.BigFileInfo;
+import com.skydevs.tgdrive.entity.PartResult;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.DownloadService;
@@ -22,7 +23,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.*;
 
 @Service
 @Slf4j
@@ -98,23 +102,45 @@ public class DownloadServiceImpl implements DownloadService {
                 List<String> partFileIds = record.getFileIds();
 
                 StreamingResponseBody streamingResponseBody = outputStream -> {
-                    // 开始下载每个分片文件并进行合并
+                    ExecutorService executorService = Executors.newFixedThreadPool(5);
+                    CompletionService<PartResult> completionService = new ExecutorCompletionService<>(executorService);
+                    // 创建结果存储
+                    List<PartResult> results = new ArrayList<>(Collections.nCopies(partFileIds.size(), null));
+
+                    // 提交所有分片的下载任务
+                    for (int i = 0; i < partFileIds.size(); i++) {
+                        final int index = i;
+                        final String partFileId = partFileIds.get(i);
+
+                        completionService.submit(() -> {
+                            try (InputStream partInputStream = downloadFileByte(partFileId).byteStream()) {
+                                return new PartResult(index, partInputStream.readAllBytes());
+                            } catch (IOException e) {
+                                log.error("分片文件下载失败：{}", partFileId, e);
+                                throw e;
+                            }
+                        });
+                    }
+
+                    // 按顺序处理分片
                     try {
-                        for (String partFileId : partFileIds) {
-                            try (InputStream partInputStream = downloadFileByte(partFileId).byteStream()){
-                                byte[] buffer = new byte[4096];
-                                int byteRead;
-                                while ((byteRead = partInputStream.read(buffer)) != -1) {
-                                    outputStream.write(buffer, 0, byteRead);
-                                }
-                            }catch (Exception e) {
-                                log.info("文件下载终止");
-                                log.info(e.getMessage(), e);
+                        for (int i = 0; i < partFileIds.size(); i++) {
+                            Future<PartResult> future = completionService.take(); // 按顺序取出任务
+                            PartResult result = future.get(); // 获取结果
+                            if (result != null) {
+                                results.set(result.getIndex(), result);
+                            }
+                        }
+
+                        for (PartResult result : results) {
+                            if (result != null) {
+                                outputStream.write(result.getData());
                             }
                         }
                     } catch (Exception e) {
-                        log.error("分片文件合并失败: " + e.getMessage(), e);
-                        throw e;
+                        log.error("分片文件写入失败：{}", e.getMessage(), e);
+                    } finally {
+                        executorService.shutdown();
                     }
                 };
 

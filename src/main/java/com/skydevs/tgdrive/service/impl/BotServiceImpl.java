@@ -155,8 +155,8 @@ public class BotServiceImpl implements BotService {
      */
     @Override
     public String uploadFile(MultipartFile multipartFile, String prefix) {
-        try {
-            List<String> fileIds = sendFileStreamInChunks(multipartFile.getInputStream(), multipartFile.getOriginalFilename());
+        try (InputStream inputStream = multipartFile.getInputStream()){
+            List<String> fileIds = sendFileStreamInChunks(inputStream, multipartFile.getOriginalFilename());
             if (fileIds.size() == 1) {
                 String fileID = fileIds.get(0);
                 FileInfo fileInfo = FileInfo.builder()
