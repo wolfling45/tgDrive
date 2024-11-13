@@ -13,7 +13,10 @@ object OkHttpClientFactory {
 
         // 创建并返回 OkHttpClient 实例
         return OkHttpClient.Builder()
-                .connectionPool(connectionPool)
-                .build()
+            .connectionPool(connectionPool)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
     }
 }

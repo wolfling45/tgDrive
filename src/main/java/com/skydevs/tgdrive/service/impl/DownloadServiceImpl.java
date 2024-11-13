@@ -2,7 +2,6 @@ package com.skydevs.tgdrive.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.skydevs.tgdrive.entity.BigFileInfo;
-import com.skydevs.tgdrive.entity.PartResult;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.DownloadService;
@@ -15,18 +14,17 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
@@ -102,43 +100,68 @@ public class DownloadServiceImpl implements DownloadService {
                 List<String> partFileIds = record.getFileIds();
 
                 StreamingResponseBody streamingResponseBody = outputStream -> {
-                    ExecutorService executorService = Executors.newFixedThreadPool(5);
-                    CompletionService<PartResult> completionService = new ExecutorCompletionService<>(executorService);
-                    // 创建结果存储
-                    List<PartResult> results = new ArrayList<>(Collections.nCopies(partFileIds.size(), null));
+                    int maxConcurrentDownloads = 3; // 最大并发下载数
+                    ExecutorService executorService = Executors.newFixedThreadPool(maxConcurrentDownloads);
 
-                    // 提交所有分片的下载任务
-                    for (int i = 0; i < partFileIds.size(); i++) {
-                        final int index = i;
-                        final String partFileId = partFileIds.get(i);
+                    // 使用列表存储 PipedInputStream，索引对应分片顺序
+                    List<PipedInputStream> pipedInputStreams = new ArrayList<>(partFileIds.size());
+                    CountDownLatch latch = new CountDownLatch(partFileIds.size());
 
-                        completionService.submit(() -> {
-                            try (InputStream partInputStream = downloadFileByte(partFileId).byteStream()) {
-                                return new PartResult(index, partInputStream.readAllBytes());
-                            } catch (IOException e) {
-                                log.error("分片文件下载失败：{}", partFileId, e);
-                                throw e;
-                            }
-                        });
-                    }
-
-                    // 按顺序处理分片
                     try {
+                        // 初始化 PipedInputStream 列表
                         for (int i = 0; i < partFileIds.size(); i++) {
-                            Future<PartResult> future = completionService.take(); // 按顺序取出任务
-                            PartResult result = future.get(); // 获取结果
-                            if (result != null) {
-                                results.set(result.getIndex(), result);
+                            pipedInputStreams.add(new PipedInputStream());
+                        }
+
+                        // 提交下载任务
+                        for (int i = 0; i < partFileIds.size(); i++) {
+                            final int index = i;
+                            final String partFileId = partFileIds.get(i);
+                            final PipedInputStream pipedInputStream = pipedInputStreams.get(index);
+                            final PipedOutputStream pipedOutputStream = new PipedOutputStream(pipedInputStream);
+
+                            executorService.submit(() -> {
+                                try (InputStream partInputStream = downloadFileByte(partFileId).byteStream();
+                                     OutputStream pos = pipedOutputStream) {
+                                    byte[] buffer = new byte[8192];
+                                    int bytesRead;
+                                    while ((bytesRead = partInputStream.read(buffer)) != -1) {
+                                        pos.write(buffer, 0, bytesRead);
+                                        pos.flush();
+                                    }
+                                } catch (IOException e) {
+                                    log.error("分片文件下载失败：{}", partFileId, e);
+                                    // 下载失败，关闭流
+                                    try {
+                                        pipedOutputStream.close();
+                                    } catch (IOException ex) {
+                                        log.error("关闭 PipedOutputStream 失败", ex);
+                                    }
+                                    throw new RuntimeException(e);
+                                } finally {
+                                    latch.countDown();
+                                }
+                            });
+                        }
+
+                        // 按顺序读取并写入输出流
+                        for (int i = 0; i < partFileIds.size(); i++) {
+                            try (InputStream pis = pipedInputStreams.get(i)) {
+                                byte[] buffer = new byte[8192];
+                                int bytesRead;
+                                while ((bytesRead = pis.read(buffer)) != -1) {
+                                    outputStream.write(buffer, 0, bytesRead);
+                                    outputStream.flush();
+                                }
+                            } catch (IOException e) {
+                                log.error("读取 PipedInputStream 失败", e);
+                                throw new RuntimeException(e);
                             }
                         }
 
-                        for (PartResult result : results) {
-                            if (result != null) {
-                                outputStream.write(result.getData());
-                            }
-                        }
+                        latch.await();
                     } catch (Exception e) {
-                        log.error("分片文件写入失败：{}", e.getMessage(), e);
+                        log.error("文件下载终止：{}", e.getMessage(), e);
                     } finally {
                         executorService.shutdown();
                     }
