@@ -26,7 +26,7 @@ java -jar tgDrive-0.0.2-SNAPSHOT.jar
 
 打开后，你会看到以下页面：
 
-![image](https://github.com/user-attachments/assets/77f361e4-912d-4279-9f33-fad65a5a84b2)
+![image](https://github.com/user-attachments/assets/d82ff412-f75f-4179-b0d7-89dcf88d73cc)
 
 ### 参数说明
 - 配置文件名：取一个你顺手的名字即可，是用来确定你是使用哪个bot、对象发送文件的
