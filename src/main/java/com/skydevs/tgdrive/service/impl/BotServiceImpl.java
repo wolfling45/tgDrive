@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -113,8 +114,19 @@ public class BotServiceImpl implements BotService {
 
                 // 提交上传任务，使用CompletableFuture
                 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+                    int retryCont = 3;
                     try {
-                        return uploadChunk(chunkData, partName);
+                        for (int i = 0; i < retryCont; i++) {
+                            try {
+                                return uploadChunk(chunkData, partName);
+                            } catch (Exception e) {
+                                if (i + 1 == retryCont) {
+                                    throw new RuntimeException("已达到重试的最大次数", e);
+                                }
+                                log.warn("正在重试第" + (i + 1) + "次");
+                            }
+                        }
+                        throw new IllegalStateException("Unexpected state: loop exited without returning"); // 理论上不可能到这里
                     } finally {
                         Arrays.fill(chunkData, (byte) 0);
                         System.gc();
@@ -138,7 +150,7 @@ public class BotServiceImpl implements BotService {
         }
     }
 
-    private String uploadChunk(byte[] chunkData, String partName) {
+    private String uploadChunk(byte[] chunkData, String partName) throws EOFException{
         SendDocument sendDocument = new SendDocument(chatId, chunkData).fileName(partName);
         SendResponse response = bot.execute(sendDocument);
 
