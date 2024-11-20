@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.util.concurrent.CompletableFuture;
+
 @RestController
 @RequestMapping("/d")
 @Slf4j
@@ -19,9 +21,9 @@ public class DownloadController {
     private DownloadService downloadService;
 
     @GetMapping("/{fileID}")
-    public ResponseEntity<StreamingResponseBody> downloadFile(@PathVariable String fileID) {
-        log.info("fileID: " + fileID);
-        return downloadService.downloadFile(fileID);
+    public CompletableFuture<ResponseEntity<StreamingResponseBody>> downloadFile(@PathVariable String fileID) {
+        log.info("接收到下载请求，fileID: " + fileID);
+        return CompletableFuture.supplyAsync(() -> downloadService.downloadFile(fileID));
     }
 
 }
