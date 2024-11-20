@@ -64,17 +64,18 @@ public class BotServiceImpl implements BotService {
      * 设置基本配置
      * @param filename
      */
-    public void setBotToken(String filename) {
+    public boolean setBotToken(String filename) {
         ConfigForm config = configService.get(filename);
         if (config == null) {
-            log.error("配置加载失败");
-            return;
+            log.error("配置文件不存在");
+            return false;
         }
         try {
             botToken = config.getToken();
             chatId = config.getTarget();
         } catch (Exception e) {
             log.error("获取Bot Token失败: {}", e.getMessage());
+            return false;
         }
         /*
         if (appConfig.getUrl() == null || appConfig.getUrl().isEmpty()) {
@@ -84,6 +85,7 @@ public class BotServiceImpl implements BotService {
         }
          */
         bot = new TelegramBot(botToken);
+        return true;
     }
 
     /**
@@ -302,10 +304,16 @@ public class BotServiceImpl implements BotService {
      * 发送消息
      * @param m
      */
-    public void sendMessage(String m) {
+    public boolean sendMessage(String m) {
         TelegramBot bot = new TelegramBot(botToken);
-        bot.execute(new SendMessage(chatId, m));
+        try {
+            bot.execute(new SendMessage(chatId, m));
+        }catch (Exception e) {
+            log.error("消息发送失败", e);
+            return false;
+        }
         log.info("消息发送成功");
+        return true;
     }
 
 

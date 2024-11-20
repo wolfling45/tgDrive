@@ -21,8 +21,7 @@ public class DownloadController {
     @GetMapping("/{fileID}")
     public ResponseEntity<StreamingResponseBody> downloadFile(@PathVariable String fileID) {
         log.info("fileID: " + fileID);
-        ResponseEntity<StreamingResponseBody> responseBody = downloadService.downloadFile(fileID);
-        return responseBody;
+        return downloadService.downloadFile(fileID);
     }
 
 }

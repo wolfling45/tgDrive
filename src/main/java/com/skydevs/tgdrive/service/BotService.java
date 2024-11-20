@@ -19,14 +19,14 @@ public interface BotService{
      * 根据文件名设置botToken
      * @param filename
      */
-    void setBotToken(String filename);
+    boolean setBotToken(String filename);
 
 
     /**
      * 发送消息
      * @param message
      */
-    void sendMessage(String message);
+    boolean sendMessage(String message);
 
 
     /**

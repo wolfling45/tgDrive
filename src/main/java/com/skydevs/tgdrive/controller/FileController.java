@@ -9,8 +9,6 @@ import com.skydevs.tgdrive.service.BotService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,12 +30,15 @@ public class FileController {
      * @return
      */
     @GetMapping("/config/{filename}")
-    public ResponseEntity<String> loadConfig(@PathVariable("filename") String filename) {
-        botService.setBotToken(filename);
-        //TODO: 加载配置失败
-        log.info("加载配置成功");
-        return ResponseEntity.ok("加载配置成功");
-    }
+    public Result<String> loadConfig(@PathVariable("filename") String filename) {
+        if (botService.setBotToken(filename)) {
+            log.info("加载配置成功");
+            return Result.success("配置加载成功");
+        } else {
+            log.error("配置加载失败");
+            return Result.error("配置加载失败");
+        }
+   }
 
     /**
      * 上传文件
@@ -45,9 +46,9 @@ public class FileController {
      * @return
      */
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(@RequestParam("file")MultipartFile[] multipartFiles, HttpServletRequest request) {
+    public Result<String> uploadFile(@RequestParam("file")MultipartFile[] multipartFiles, HttpServletRequest request) {
         if (multipartFiles.length == 0 || multipartFiles == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("上传的文件为空");
+            return Result.error("上传的文件为空");
         }
 
         List<UploadFile> uploadFiles = new ArrayList<>();
@@ -76,8 +77,7 @@ public class FileController {
         }
 
         String resultJSON = JSON.toJSONString(uploadFiles);
-        return ResponseEntity.ok(resultJSON);
-
+        return Result.success(resultJSON);
     }
 
     /**
@@ -86,10 +86,13 @@ public class FileController {
      * @return
      */
     @PostMapping("/send-message")
-    public ResponseEntity<String> sendMessage(@RequestBody Message message){
+    public Result<String> sendMessage(@RequestBody Message message){
         log.info("处理消息发送");
-        botService.sendMessage(message.getMessage());
-        return ResponseEntity.ok("发送成功");
+        if (botService.sendMessage(message.getMessage())) {
+            return Result.success("消息发送成功: " + message);
+        } else {
+            return Result.error("消息发送失败");
+        }
     }
 
 
