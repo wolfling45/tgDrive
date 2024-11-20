@@ -15,6 +15,9 @@ public class ConfigController {
     @Autowired
     private ConfigService configService;
 
+    // 暂时禁止，防止token泄露
+    // TODO：完成用户登入
+    /*
     @GetMapping()
     public ResponseEntity<ConfigForm> getConfig(@RequestParam String name) {
         ConfigForm config = configService.get(name);
@@ -25,6 +28,7 @@ public class ConfigController {
         log.info("获取数据成功");
         return ResponseEntity.ok(config);
     }
+     */
 
     @PostMapping()
     public ResponseEntity<String> submitConfig(@RequestBody ConfigForm configForm) {

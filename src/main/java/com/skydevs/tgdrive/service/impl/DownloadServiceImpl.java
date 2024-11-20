@@ -114,6 +114,7 @@ public class DownloadServiceImpl implements DownloadService {
                         }
 
                         // 提交下载任务
+                        //TODO: 多次尝试下载
                         for (int i = 0; i < partFileIds.size(); i++) {
                             final int index = i;
                             final String partFileId = partFileIds.get(i);
