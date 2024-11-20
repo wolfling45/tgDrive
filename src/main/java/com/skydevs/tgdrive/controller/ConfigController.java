@@ -1,11 +1,14 @@
 package com.skydevs.tgdrive.controller;
 
 import com.skydevs.tgdrive.dto.ConfigForm;
+import com.skydevs.tgdrive.result.Result;
 import com.skydevs.tgdrive.service.ConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @Slf4j
@@ -31,9 +34,9 @@ public class ConfigController {
      */
 
     @PostMapping()
-    public ResponseEntity<String> submitConfig(@RequestBody ConfigForm configForm) {
+    public Result<String> submitConfig(@RequestBody ConfigForm configForm) {
         configService.save(configForm);
         log.info("配置保存成功");
-        return ResponseEntity.ok("配置已成功提交");
+        return Result.success("配置保存成功");
     }
 }
