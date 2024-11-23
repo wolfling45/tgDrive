@@ -138,7 +138,6 @@ public class DownloadServiceImpl implements DownloadService {
                                     } catch (IOException ex) {
                                         log.error("关闭 PipedOutputStream 失败", ex);
                                     }
-                                    throw new RuntimeException(e);
                                 } finally {
                                     latch.countDown();
                                 }
@@ -155,8 +154,14 @@ public class DownloadServiceImpl implements DownloadService {
                                     outputStream.flush();
                                 }
                             } catch (IOException e) {
-                                log.error("读取 PipedInputStream 失败", e);
-                                throw new RuntimeException(e);
+                                String message = e.getMessage();
+                                if (message != null && (message.contains("An established connection was aborted") || message.contains("你的主机中的软件中止了一个已建立的连接"))) {
+                                    log.info("客户端中止了连接：{}", message);
+                                    return;
+                                } else {
+                                    log.error("读取 PipedInputStream 失败", e);
+                                    throw new RuntimeException(e);
+                                }
                             }
                         }
 
@@ -183,7 +188,17 @@ public class DownloadServiceImpl implements DownloadService {
                         while ((byteRead = is.read(buffer)) != -1) {
                             outputStream.write(buffer, 0, byteRead);
                         }
-                    }catch (Exception e) {
+                    } catch (IOException e) {
+                        String message = e.getMessage();
+                        if (message != null && (message.contains("An established connection was aborted") || message.contains("你的主机中的软件中止了一个已建立的连接"))) {
+                            // 客户端中止了连接，记录信息级别的日志或忽略
+                            log.info("客户端中止了连接：{}", message);
+                        } else {
+                            // 其他 IOException，可能需要进一步处理
+                            log.error("写入输出流时发生 IOException", e);
+                            throw new RuntimeException(e);
+                        }
+                    } catch (Exception e) {
                         log.info("文件下载终止");
                         log.info(e.getMessage(), e);
                     }
