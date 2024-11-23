@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8085
   tomcat:
     reject-illegal-header: false
     connection-timeout: 60000
