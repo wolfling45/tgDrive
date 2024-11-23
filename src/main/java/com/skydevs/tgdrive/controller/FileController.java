@@ -56,8 +56,11 @@ public class FileController {
         for (MultipartFile file : multipartFiles) {
             UploadFile uploadFile = new UploadFile();
             if (!file.isEmpty()) {
-                //TODO: 反向代理异常
-                String protocol = request.getScheme(); // 获取协议 http 或 https
+                String scheme = request.getHeader("X-Forwarded-Proto"); // 从代理请求头中获取协议
+                if (scheme == null) {
+                    scheme = request.getScheme(); // 如果未设置请求头，则回退到 request.getScheme()
+                }
+                String protocol = scheme;// 获取协议 http 或 https
                 String host = request.getServerName(); // 获取主机名 localhost 或实际域名
                 int port = request.getServerPort(); // 获取端口号 8080 或其他
                 String prefix = protocol + "://" + host + ":" + port;
