@@ -1,6 +1,5 @@
 package com.skydevs.tgdrive.controller;
 
-import com.alibaba.fastjson.JSON;
 import com.skydevs.tgdrive.dto.Message;
 import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.result.PageResult;
@@ -46,7 +45,7 @@ public class FileController {
      * @return
      */
     @PostMapping("/upload")
-    public Result<String> uploadFile(@RequestParam("file")MultipartFile[] multipartFiles, HttpServletRequest request) {
+    public Result<List<UploadFile>> uploadFile(@RequestParam("file")MultipartFile[] multipartFiles, HttpServletRequest request) {
         if (multipartFiles.length == 0 || multipartFiles == null) {
             return Result.error("上传的文件为空");
         }
@@ -54,33 +53,58 @@ public class FileController {
         List<UploadFile> uploadFiles = new ArrayList<>();
 
         for (MultipartFile file : multipartFiles) {
-            UploadFile uploadFile = new UploadFile();
-            if (!file.isEmpty()) {
-                String scheme = request.getHeader("X-Forwarded-Proto"); // 从代理请求头中获取协议
-                if (scheme == null) {
-                    scheme = request.getScheme(); // 如果未设置请求头，则回退到 request.getScheme()
-                }
-                String protocol = scheme;// 获取协议 http 或 https
-                String host = request.getServerName(); // 获取主机名 localhost 或实际域名
-                int port = request.getServerPort(); // 获取端口号 8080 或其他
-                String prefix = protocol + "://" + host + ":" + port;
-                String downloadPath = botService.uploadFile(file, prefix);
-                String downloadUrl;
-                if (downloadPath == null) {
-                    downloadUrl = "文件上传失败";
-                } else {
-                    downloadUrl = prefix + downloadPath;
-                }
-                uploadFile.setFileName(file.getOriginalFilename());
-                uploadFile.setDownloadLink(downloadUrl);
-                uploadFiles.add(uploadFile);
-           } else {
-                uploadFile.setFileName("文件不存在");
-            }
+            UploadFile uploadFile = getUploadFile(file, request);
+            uploadFiles.add(uploadFile);
         }
 
-        String resultJSON = JSON.toJSONString(uploadFiles);
-        return Result.success(resultJSON);
+        return Result.success(uploadFiles);
+    }
+
+    /**
+     * 生成上传文件
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    private UploadFile getUploadFile(MultipartFile multipartFile, HttpServletRequest request) {
+        UploadFile uploadFile = new UploadFile();
+        if (!multipartFile.isEmpty()) {
+            String scheme = request.getHeader("X-Forwarded-Proto"); // 从代理请求头中获取协议
+            if (scheme == null) {
+                scheme = request.getScheme(); // 如果未设置请求头，则回退到 request.getScheme()
+            }
+            String protocol = scheme;// 获取协议 http 或 https
+            String host = request.getServerName(); // 获取主机名 localhost 或实际域名
+            int port = request.getServerPort(); // 获取端口号 8080 或其他
+            String prefix = protocol + "://" + host + ":" + port;
+            String downloadPath = botService.uploadFile(multipartFile, prefix);
+            String downloadUrl;
+            if (downloadPath == null) {
+                downloadUrl = "文件上传失败";
+            } else {
+                downloadUrl = prefix + downloadPath;
+            }
+            uploadFile.setFileName(multipartFile.getOriginalFilename());
+            uploadFile.setDownloadLink(downloadUrl);
+        } else {
+            uploadFile.setFileName("文件不存在");
+        }
+
+        return uploadFile;
+    }
+
+
+    /**
+     * 上传文件（适配picGo）
+     * @param multipartFile
+     * @return
+     */
+    @PostMapping("/uploadPicGo")
+    public Result<UploadFile> uploadFile(@RequestParam("file")MultipartFile multipartFile, HttpServletRequest request) {
+        if (multipartFile == null || multipartFile.isEmpty()) {
+            return Result.error("上传的文件为空");
+        }
+        return Result.success(getUploadFile(multipartFile, request));
     }
 
     /**
