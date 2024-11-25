@@ -11,8 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 
 @RestController
@@ -38,27 +37,6 @@ public class FileController {
             return Result.error("配置加载失败");
         }
    }
-
-    /**
-     * 上传文件
-     * @param multipartFiles
-     * @return
-     */
-    @PostMapping("/upload")
-    public Result<List<UploadFile>> uploadFile(@RequestParam("file")MultipartFile[] multipartFiles, HttpServletRequest request) {
-        if (multipartFiles.length == 0 || multipartFiles == null) {
-            return Result.error("上传的文件为空");
-        }
-
-        List<UploadFile> uploadFiles = new ArrayList<>();
-
-        for (MultipartFile file : multipartFiles) {
-            UploadFile uploadFile = getUploadFile(file, request);
-            uploadFiles.add(uploadFile);
-        }
-
-        return Result.success(uploadFiles);
-    }
 
     /**
      * 生成上传文件
@@ -95,17 +73,19 @@ public class FileController {
 
 
     /**
-     * 上传文件（适配picGo）
+     * 上传文件
      * @param multipartFile
      * @return
      */
-    @PostMapping("/uploadPicGo")
-    public Result<UploadFile> uploadFile(@RequestParam("file")MultipartFile multipartFile, HttpServletRequest request) {
-        if (multipartFile == null || multipartFile.isEmpty()) {
-            return Result.error("上传的文件为空");
-        }
-        return Result.success(getUploadFile(multipartFile, request));
-    }
+    @PostMapping("/upload")
+    public CompletableFuture<Result<UploadFile>> uploadFile(@RequestParam("file")MultipartFile multipartFile, HttpServletRequest request) {
+        return CompletableFuture.supplyAsync(() -> {
+            if (multipartFile == null || multipartFile.isEmpty()) {
+                return Result.error("上传的文件为空");
+            }
+            return Result.success(getUploadFile(multipartFile, request));
+        });
+   }
 
     /**
      * 发送消息
