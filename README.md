@@ -61,11 +61,11 @@
 
 ### 参数说明
 
-- **API 地址**：本地部署默认地址为 `http://localhost:8085/api/uploadPicGo`。如果部署在服务器上，请将 `http://localhost:8085` 修改为您的服务器地址，例如：`http://233.233.233.233:8085/api/uploadPicGo` 或 `http://example.com:8085/api/uploadPicGo`。
+- **API 地址**：本地部署默认地址为 `http://localhost:8085/api/upload`。如果部署在服务器上，请将 `http://localhost:8085` 修改为您的服务器地址，例如：`http://233.233.233.233:8085/api/upload` 或 `http://example.com:8085/api/upload`。
 - **POST 参数名**：默认为 `file`。
 - **JSON 路径**：默认为 `data.downloadLink`。
 
-![PicGo 参数设置示例](https://github.com/user-attachments/assets/684206b8-7c0e-4b22-a5c6-fcd0fcf0acd5)
+![image](https://github.com/user-attachments/assets/dffeeb23-8f63-4bdb-a676-0bd693a2bede)
 
 ## 支持与反馈
 
