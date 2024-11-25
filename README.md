@@ -1,44 +1,69 @@
-# 一款使用Java开发的，基于telegram bot的不限制容量，速度的网盘
+# tgDrive - 无限容量和速度的网盘
 
-使用多线程上传和下载，尽量达到telegram的速率限制
+**tgDrive** 是一款使用 Java 开发的基于 Telegram Bot 的网盘应用，支持不限容量和速度的文件存储。
 
-图片做了外链，直接访问下载链接就会在浏览器展示图片，展示如下：
+目前已完成：
+- **多线程上传下载**：尽量达到 Telegram 的速率上限，实现高效的文件传输。
+- **支持图片外链**：可直接访问下载链接，浏览器中展示图片。
+- **PicGo 支持**：搭配 PicGo 使用，快速上传图床。
 
-![image](https://github.com/user-attachments/assets/5cbe3228-e425-4ece-84ac-6f1616f54be9)
+![tgDrive 上传界面展示](https://github.com/user-attachments/assets/5cbe3228-e425-4ece-84ac-6f1616f54be9)
 
-准备开发成网盘，目前还是作为图床用到的比较多
+[demo 站点：tgDrive](https://server.skydevs.link/upload)
 
-## 环境
-java17+
+[自部署指南](#自部署)  |  [PicGo 配置](#picgo-配置)
 
-## 使用方法
-在release页面下载最新的二进制包
+目前打算逐步开发为网盘，但作为图床的使用场景已经相当成熟。
 
-下载好后，进入你存放二进制包的目录
+## 自部署
 
-使用java -jar [二进制包] 来运行，例如：
+### 环境要求
+- Java 17+
 
-```
-java -jar tgDrive-0.0.2-SNAPSHOT.jar
-```
+### 使用方法
+1. 前往 [release 页面](#) 下载最新的二进制包。
+2. 下载完成后，进入存放二进制包的目录。
+3. 使用以下命令运行二进制包：
+   ```
+   java -jar tgDrive-0.0.2-SNAPSHOT.jar
+   ```
+4. 运行成功后，在浏览器中输入 `localhost:8085` 以开始使用。
 
-运行成功后在浏览器输入localhost:8085来开始使用
+打开后，您将看到以下页面：
 
-打开后，你会看到以下页面：
+![tgDrive 初始页面](https://github.com/user-attachments/assets/d82ff412-f75f-4179-b0d7-89dcf88d73cc)
 
-![image](https://github.com/user-attachments/assets/d82ff412-f75f-4179-b0d7-89dcf88d73cc)
+## 参数配置说明
+
+- **配置文件名**：可以随意填写，主要用于标识您当前使用哪个 Bot 和文件上传配置。
+- **botToken**：您的 Telegram Bot 的 API Token。如何创建 Telegram Bot？可以参考[这篇文章](https://skydevs.link/posts/tech/telegram_bot)。
+- **chatID**：通常为您的用户 ID。如何获取 chatID？同样可以参考[这篇文章](https://skydevs.link/posts/tech/telegram_bot)，查找最后一栏即可。
+- **url (选填)**：目前没有任何用途，无需填写，填入也无影响。
+- **Pass (选填)**：功能正在开发中。
+
+填写完上述配置后，点击 **提交**。若提示 "提交成功"，即表示配置已保存。此时可以加载配置，配置文件名为您刚刚填写的名字。
+
+加载配置后进入上传页面，支持粘贴、拖拽或选择文件上传。
+
+上传完成后会返回文件的下载路径，已上传的文件也会显示在页面左上角的文件列表中。
+
+## PicGo 配置
+
+本项目可以与 [PicGo](https://github.com/Molunerfinn/PicGo) 一起使用，实现快速图床上传。
+
+使用前，请确保已安装插件 `web-uploader`。
+
+![PicGo 配置页面](https://github.com/user-attachments/assets/fe52f47e-b2ab-4751-bb65-7ead9ebce2c0)
 
 ### 参数说明
-- 配置文件名：取一个你顺手的名字即可，是用来确定你是使用哪个bot、对象发送文件的
-- botToken：你的telegram bot 的API token，如何创建一个telegram bot？可以参考[这篇文章](https://skydevs.link/posts/tech/telegram_bot)
-- chatID：一般来说，就是你的用户ID，如何获取？可以参考[这篇文章](https://skydevs.link/posts/tech/telegram_bot)，最后一栏就是
-- url (选填)：目前没有任何用处，不需要填，当然你填了也没什么
-- Pass (选填)：等待施工
 
-填写好了上述配置后，点击提交，看到“提交成功”提示后，就可以加载配置，配置文件名就是你刚刚填写的配置文件名
+- **API 地址**：本地部署默认地址为 `http://localhost:8085/api/uploadPicGo`。如果部署在服务器上，请将 `http://localhost:8085` 修改为您的服务器地址，例如：`http://233.233.233.233:8085/api/uploadPicGo` 或 `http://example.com:8085/api/uploadPicGo`。
+- **POST 参数名**：默认为 `file`。
+- **JSON 路径**：默认为 `data.downloadLink`。
 
-加载配置后就来到了上传页面，支持粘贴、拖拽、选择文件
+![PicGo 参数设置示例](https://github.com/user-attachments/assets/684206b8-7c0e-4b22-a5c6-fcd0fcf0acd5)
 
-选择文件上传后等待上传即可，上传完成后会返回文件的下载路径，已上传的文件也会保存在左上角的文件列表中
+## 支持与反馈
 
-点个star谢谢喵！你的支持是我最大的动力！
+如果您觉得项目有帮助，请点个 Star 支持我谢谢喵！您的支持是我最大的动力！
+
