@@ -11,6 +11,8 @@
 
 [demo 站点：tgDrive](https://server.skydevs.link/upload)
 
+本项目的前端地址：[tgDriveFront](https://github.com/SkyDependence/tgDrive-front)
+
 [自部署指南](#自部署)  |  [PicGo 配置](#picgo-配置)
 
 目前打算逐步开发为网盘，但作为图床的使用场景已经相当成熟。
@@ -48,6 +50,8 @@
 上传完成后会返回文件的下载路径，已上传的文件也会显示在页面左上角的文件列表中。
 
 ## PicGo 配置
+
+> **Tips：** 在v0.0.4中支持PicGo
 
 本项目可以与 [PicGo](https://github.com/Molunerfinn/PicGo) 一起使用，实现快速图床上传。
 
