@@ -23,7 +23,7 @@
 - Java 17+
 
 ### 使用方法
-1. 前往 [release 页面](#) 下载最新的二进制包。
+1. 前往 [release 页面](https://github.com/SkyDependence/tgDrive/releases) 下载最新的二进制包。
 2. 下载完成后，进入存放二进制包的目录。
 3. 使用以下命令运行二进制包：
    ```
