@@ -27,5 +27,5 @@ public interface FileMapper {
     String getFileNameByFileId(String fileId);
 
     @Select("SELECT full_size FROM files where file_id = #{fileId}")
-    String getFullSizeByFileId(String fileId);
+    Long getFullSizeByFileId(String fileId);
 }

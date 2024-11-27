@@ -36,12 +36,14 @@ public class DownloadServiceImpl implements DownloadService {
     private FileMapper fileMapper;
 
     private final OkHttpClient okHttpClient = OkHttpClientFactory.createClient();
+    //TODO: need refraction
     @Override
     public ResponseEntity<StreamingResponseBody> downloadFile(String fileID) {
         try {
             // 从 botService 获取文件的下载路径和文件名
             String fileUrl = botService.getFullDownloadPath(fileID);
             String filename = fileMapper.getFileNameByFileId(fileID);
+            Long fullSize = fileMapper.getFullSizeByFileId(fileID);
             if (filename == null) {
                 filename = botService.getFileNameByID(fileID);
             }
@@ -54,7 +56,7 @@ public class DownloadServiceImpl implements DownloadService {
             }
 
             // 设置响应头
-            HttpHeaders headers = setHeaders(filename);
+            HttpHeaders headers = setHeaders(filename, fullSize);
 
             // 创建 OkHttp请求
             Request request = new Request.Builder()
@@ -215,11 +217,12 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
-    private HttpHeaders setHeaders(String filename) {
+    private HttpHeaders setHeaders(String filename, Long size) {
         HttpHeaders headers = new HttpHeaders();
         try {
             String contentType = getContentTypeFromFilename(filename);
             headers.setContentType(MediaType.parseMediaType(contentType));
+            headers.setContentLength(size);
 
             if (contentType.startsWith("image/") || contentType.startsWith("video/")) {
                 // 对于图片和视频，设置 Content-Disposition 为 inline
