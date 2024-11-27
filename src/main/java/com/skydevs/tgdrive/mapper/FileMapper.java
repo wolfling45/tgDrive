@@ -13,7 +13,7 @@ public interface FileMapper {
      * 插入已上传文件
      * @param fileInfo
      */
-    @Insert("INSERT INTO files (file_name, download_url, upload_time, file_id, size) VALUES (#{fileName}, #{downloadUrl}, #{uploadTime}, #{fileId}, #{size})")
+    @Insert("INSERT INTO files (file_name, download_url, upload_time, file_id, size, full_size) VALUES (#{fileName}, #{downloadUrl}, #{uploadTime}, #{fileId}, #{size}, #{full_size})")
     void insertFile(FileInfo fileInfo);
 
     /**

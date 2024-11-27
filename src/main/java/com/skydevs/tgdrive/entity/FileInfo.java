@@ -13,6 +13,7 @@ public class FileInfo {
     private String fileName;         // 文件名
     private String downloadUrl;      // 文件下载URL
     private String size;
+    private Long full_size;
     private String fileId;
 
     // 用于存储上传时间的 UNIX 时间戳
