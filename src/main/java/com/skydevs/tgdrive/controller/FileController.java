@@ -47,13 +47,9 @@ public class FileController {
     private UploadFile getUploadFile(MultipartFile multipartFile, HttpServletRequest request) {
         UploadFile uploadFile = new UploadFile();
         if (!multipartFile.isEmpty()) {
-            String scheme = request.getHeader("X-Forwarded-Proto"); // 从代理请求头中获取协议
-            if (scheme == null) {
-                scheme = request.getScheme(); // 如果未设置请求头，则回退到 request.getScheme()
-            }
-            String protocol = scheme;// 获取协议 http 或 https
+            String protocol = request.getHeader("X-Forwarded-Proto") != null ? request.getHeader("X-Forwarded-Proto") : request.getScheme(); // 先代理请求头中获取协议
             String host = request.getServerName(); // 获取主机名 localhost 或实际域名
-            int port = request.getServerPort(); // 获取端口号 8080 或其他
+            int port = request.getHeader("X-Forwarded-Port") != null ? Integer.parseInt(request.getHeader("X-Forwarded-Port")) : request.getServerPort(); // 先从代理请求头中获取端口号 8080 或其他
             String prefix = protocol + "://" + host + ":" + port;
             String downloadPath = botService.uploadFile(multipartFile, prefix);
             String downloadUrl;
