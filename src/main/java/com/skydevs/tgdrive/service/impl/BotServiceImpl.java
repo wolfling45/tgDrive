@@ -95,12 +95,12 @@ public class BotServiceImpl implements BotService {
      * @return
      */
     private List<String> sendFileStreamInChunks(InputStream inputStream, String filename) {
-        byte[] buffer = new byte[MAX_FILE_SIZE]; // 10MB 缓冲区
         List<CompletableFuture<String>> futures = new ArrayList<>();
-        ExecutorService executorService = Executors.newFixedThreadPool(10); // 线程池大小
-        Semaphore semaphore = new Semaphore(10); // 控制同时运行的任务数量
+        ExecutorService executorService = Executors.newFixedThreadPool(5); // 线程池大小
+        Semaphore semaphore = new Semaphore(5); // 控制同时运行的任务数量
 
         try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream)) {
+            byte[] buffer = new byte[MAX_FILE_SIZE]; // 10MB 缓冲区
             int byteRead;
             int partIndex = 0;
 
@@ -116,8 +116,8 @@ public class BotServiceImpl implements BotService {
 
                 // 提交上传任务，使用CompletableFuture
                 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-                    int retryCont = 3;
                     try {
+                        int retryCont = 3;
                         for (int i = 0; i < retryCont; i++) {
                             try {
                                 return uploadChunk(chunkData, partName);
@@ -130,8 +130,6 @@ public class BotServiceImpl implements BotService {
                         }
                         throw new IllegalStateException("Unexpected state: loop exited without returning"); // 理论上不可能到这里
                     } finally {
-                        Arrays.fill(chunkData, (byte) 0);
-                        System.gc();
                         semaphore.release(); // 在任务完成后释放信号量
                     }
                 }, executorService);
