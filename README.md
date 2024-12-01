@@ -9,6 +9,8 @@
 
 ![tgDrive 上传界面展示](https://github.com/user-attachments/assets/5cbe3228-e425-4ece-84ac-6f1616f54be9)
 
+[Render 部署的站点（推荐使用这个，速度更快）](https://tgdrive-latest.onrender.com/upload)
+
 [demo 站点：tgDrive](https://server.skydevs.link/upload)
 
 本项目的前端地址：[tgDriveFront](https://github.com/SkyDependence/tgDrive-front)
