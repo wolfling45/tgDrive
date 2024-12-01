@@ -13,7 +13,7 @@
 
 本项目的前端地址：[tgDriveFront](https://github.com/SkyDependence/tgDrive-front)
 
-[自部署指南](#自部署)  |  [PicGo 配置](#picgo-配置)  |  [Docker 部署](#docker-部署)
+[自部署指南](#自部署)  |  [PicGo 配置](#picgo-配置)  |  [Docker 部署](#docker-部署)  |  [Render 部署](#render-部署)
 
 目前打算逐步开发为网盘，但作为图床的使用场景已经相当成熟。
 
@@ -51,7 +51,8 @@
 
 ## PicGo 配置
 
-> **Tips：** 在v0.0.4中支持PicGo
+> [!TIP]
+> 在v0.0.4中支持PicGo
 
 本项目可以与 [PicGo](https://github.com/Molunerfinn/PicGo) 一起使用，实现快速图床上传。
 
@@ -85,6 +86,25 @@ docker run -d -p 8085:8085 --name tgdrive nanyangzesi/tgdrive:latest
 ```
 docker run -d -p 8085:8085 --name tgdrive --restart always nanyangzesi/tgdrive:latest
 ```
+
+## Render 部署
+
+> [!TIP]
+> Render的部署即使是免费的也需要银行卡认证
+
+新建一个Web Service
+
+![image](https://github.com/user-attachments/assets/543abbd1-0b2e-4892-8e46-265539159831)
+
+选择Exciting image，填入我的项目的docker镜像`nanyangzesi/tgdrive:latest
+
+![image](https://github.com/user-attachments/assets/09f212c1-886b-424e-8015-a8f96f7e48ee)
+
+选择免费的instance
+
+![image](https://github.com/user-attachments/assets/18506bfa-9dda-4c41-a1eb-6cd7206c6f4b)
+
+拉到最下面，点击Deploy web service，等待部署完成，至此，你的tgdrive的实例就部署完成了🎉
 
 ## 支持与反馈
 
