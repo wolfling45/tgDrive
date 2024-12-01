@@ -13,7 +13,7 @@
 
 本项目的前端地址：[tgDriveFront](https://github.com/SkyDependence/tgDrive-front)
 
-[自部署指南](#自部署)  |  [PicGo 配置](#picgo-配置)  |  [Docker 部署]()
+[自部署指南](#自部署)  |  [PicGo 配置](#picgo-配置)  |  [Docker 部署](#docker-部署)
 
 目前打算逐步开发为网盘，但作为图床的使用场景已经相当成熟。
 
