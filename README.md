@@ -1,5 +1,7 @@
 # tgDrive - 无限容量和速度的网盘
 
+> [English Version](./README-en.md)
+
 **tgDrive** 是一款使用 Java 开发的基于 Telegram Bot 的网盘应用，支持不限容量和速度的文件存储。
 
 目前已完成：
