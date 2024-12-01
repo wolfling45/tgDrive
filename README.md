@@ -13,7 +13,7 @@
 
 本项目的前端地址：[tgDriveFront](https://github.com/SkyDependence/tgDrive-front)
 
-[自部署指南](#自部署)  |  [PicGo 配置](#picgo-配置)
+[自部署指南](#自部署)  |  [PicGo 配置](#picgo-配置)  |  [Docker 部署]()
 
 目前打算逐步开发为网盘，但作为图床的使用场景已经相当成熟。
 
@@ -66,6 +66,25 @@
 - **JSON 路径**：默认为 `data.downloadLink`。
 
 ![image](https://github.com/user-attachments/assets/dffeeb23-8f63-4bdb-a676-0bd693a2bede)
+
+## Docker 部署
+
+拉取镜像：
+
+```
+docker pull nanyangzesi/tgdrive:latest
+```
+
+运行容器：
+
+```
+docker run -d -p 8085:8085 --name tgdrive nanyangzesi/tgdrive:latest
+```
+
+运行容器且开机自启动：
+```
+docker run -d -p 8085:8085 --name tgdrive --restart always nanyangzesi/tgdrive:latest
+```
 
 ## 支持与反馈
 
