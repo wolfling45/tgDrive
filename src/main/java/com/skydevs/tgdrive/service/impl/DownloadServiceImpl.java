@@ -38,6 +38,11 @@ public class DownloadServiceImpl implements DownloadService {
 
     private final OkHttpClient okHttpClient = OkHttpClientFactory.createClient();
 
+    /**
+     * 下载文件
+     * @param fileID
+     * @return
+     */
     @Override
     public ResponseEntity<StreamingResponseBody> downloadFile(String fileID) {
         try (InputStream inputStream = downloadFileInputStream(fileID);
@@ -64,6 +69,12 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /**
+     * 处理小文件
+     * @param fileID
+     * @param inputStream
+     * @return
+     */
     private ResponseEntity<StreamingResponseBody> handleRegularFile(String fileID, InputStream inputStream) {
         log.info("文件不是记录文件，直接下载文件...");
 
@@ -86,6 +97,11 @@ public class DownloadServiceImpl implements DownloadService {
                 .body(streamingResponseBody);
     }
 
+    /**
+     * 流数据处理
+     * @param inputStream
+     * @param outputStream
+     */
     private void streamData(InputStream inputStream, OutputStream outputStream) {
         try (InputStream is = inputStream) {
             byte[] buffer = new byte[4096];
@@ -101,6 +117,12 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /**
+     * 处理大文件
+     * @param fileID
+     * @param record
+     * @return
+     */
     private ResponseEntity<StreamingResponseBody> handleRecordFile(String fileID, BigFileInfo record) {
         log.info("文件名为：" + record.getFileName());
         log.info("检测到记录文件，开始下载并合并分片文件...");
@@ -122,6 +144,11 @@ public class DownloadServiceImpl implements DownloadService {
                 .body(streamingResponseBody);
     }
 
+    /**
+     * 下载并合并分片文件
+     * @param partFileIds
+     * @param outputStream
+     */
     private void downloadAndMergeFileParts(List<String> partFileIds, OutputStream outputStream) {
         int maxConcurrentDownloads = 3; // 最大并发下载数
         ExecutorService executorService = Executors.newFixedThreadPool(maxConcurrentDownloads);
@@ -178,6 +205,10 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /**
+     * 处理客户端终止连接异常
+     * @param e
+     */
     private void handleClientAbortException(IOException e) {
         String message = e.getMessage();
         if (message != null && (message.contains("An established connection was aborted") || message.contains("你的主机中的软件中止了一个已建立的连接"))) {
@@ -188,6 +219,12 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /**
+     * 处理文件名
+     * @param fileID
+     * @param defaultName
+     * @return
+     */
     private String resolveFilename(String fileID, String defaultName) {
         String filename = fileMapper.getFileNameByFileId(fileID);
         if (filename == null) {
@@ -200,6 +237,11 @@ public class DownloadServiceImpl implements DownloadService {
         return filename;
     }
 
+    /**
+     * 尝试转换为大文件的记录文件
+     * @param inputStream
+     * @return
+     */
     private BigFileInfo parseBigFileInfo(InputStream inputStream) {
         try {
             String fileContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
@@ -210,6 +252,12 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /**
+     * 下载文件并转换为流处理
+     * @param fileID
+     * @return
+     * @throws IOException
+     */
     private InputStream downloadFileInputStream(String fileID) throws IOException {
         File file = botService.getFile(fileID);
         String fileUrl = botService.getFullDownloadPath(file);
