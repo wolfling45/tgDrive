@@ -11,7 +11,7 @@
 
 ![tgDrive Upload Interface Demo](https://github.com/user-attachments/assets/5cbe3228-e425-4ece-84ac-6f1616f54be9)
 
-[Render Deployment Site (Recommended for better speed)](https://tgdrive-latest.onrender.com/upload)
+[Render Deployment Site (Recommended for better speed)](https://render.skydevs.link/upload)
 
 [Demo Site: tgDrive](https://server.skydevs.link/upload)
 
