@@ -2,6 +2,7 @@ package com.skydevs.tgdrive.service;
 
 import com.pengrad.telegrambot.model.File;
 import com.skydevs.tgdrive.result.PageResult;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -35,7 +36,7 @@ public interface BotService{
      * @param multipartFile
      * @return
      */
-    String uploadFile(MultipartFile multipartFile, String prefix);
+    String uploadFile(MultipartFile multipartFile, HttpServletRequest request);
 
     /**
      * 获取完整下载路径

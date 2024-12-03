@@ -19,6 +19,7 @@ import com.skydevs.tgdrive.result.PageResult;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import com.skydevs.tgdrive.utils.UserFriendly;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -150,6 +151,13 @@ public class BotServiceImpl implements BotService {
         }
     }
 
+    /**
+     * 上传块
+     * @param chunkData
+     * @param partName
+     * @return
+     * @throws EOFException
+     */
     private String uploadChunk(byte[] chunkData, String partName) throws EOFException{
         SendDocument sendDocument = new SendDocument(chatId, chunkData).fileName(partName);
         SendResponse response = bot.execute(sendDocument);
@@ -168,15 +176,16 @@ public class BotServiceImpl implements BotService {
     /**
      * 上传文件
      * @param multipartFile
-     * @param prefix
+     * @param request
      * @return
      */
     @Override
-    public String uploadFile(MultipartFile multipartFile, String prefix) {
+    public String uploadFile(MultipartFile multipartFile, HttpServletRequest request) {
         try {
+            String prefix = getPrefix(request);
             InputStream inputStream = multipartFile.getInputStream();
             String filename = multipartFile.getOriginalFilename();
-            Long size = multipartFile.getSize();
+            long size = multipartFile.getSize();
             List<String> fileIds = sendFileStreamInChunks(inputStream, filename);
             if (fileIds.size() == 1) {
                 String fileID = fileIds.get(0);
@@ -189,8 +198,8 @@ public class BotServiceImpl implements BotService {
                         .fileName(filename)
                         .build();
                 fileMapper.insertFile(fileInfo);
-                return "/d/" + fileID;
-            } else {
+                return prefix + "/d/" + fileID;
+            } else if (fileIds.size() > 1){
                 String fileID = createRecordFile(filename, size, fileIds);
                 FileInfo fileInfo = FileInfo.builder()
                         .fileId(fileID)
@@ -201,7 +210,9 @@ public class BotServiceImpl implements BotService {
                         .fileName(filename)
                         .build();
                 fileMapper.insertFile(fileInfo);
-                return "/d/" + fileID;
+                return prefix + "/d/" + fileID;
+            } else {
+                return "文件上传失败";
             }
         }catch (IOException e) {
             log.error("文件上传失败，响应信息：{}", e.getMessage());
@@ -331,5 +342,17 @@ public class BotServiceImpl implements BotService {
     @Override
     public String getBotToken() {
         return botToken;
+    }
+
+    /**
+     * 获取前缀
+     * @param request
+     * @return
+     */
+    public String getPrefix(HttpServletRequest request) {
+        String protocol = request.getHeader("X-Forwarded-Proto") != null ? request.getHeader("X-Forwarded-Proto") : request.getScheme(); // 先代理请求头中获取协议
+        String host = request.getServerName(); // 获取主机名 localhost 或实际域名
+        int port = request.getHeader("X-Forwarded-Port") != null ? Integer.parseInt(request.getHeader("X-Forwarded-Port")) : request.getServerPort(); // 先从代理请求头中获取端口号 8080 或其他
+        return protocol + "://" + host + ":" + port;
     }
 }
