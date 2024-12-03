@@ -12,6 +12,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.GetFileResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.skydevs.tgdrive.dto.ConfigForm;
+import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.entity.BigFileInfo;
 import com.skydevs.tgdrive.entity.FileInfo;
 import com.skydevs.tgdrive.mapper.FileMapper;
@@ -174,13 +175,32 @@ public class BotServiceImpl implements BotService {
     }
 
     /**
-     * 上传文件
+     * 生成上传文件
      * @param multipartFile
      * @param request
      * @return
      */
     @Override
-    public String uploadFile(MultipartFile multipartFile, HttpServletRequest request) {
+    public UploadFile getUploadFile(MultipartFile multipartFile, HttpServletRequest request) {
+        UploadFile uploadFile = new UploadFile();
+        if (!multipartFile.isEmpty()) {
+            String downloadUrl = uploadFile(multipartFile, request);
+            uploadFile.setFileName(multipartFile.getOriginalFilename());
+            uploadFile.setDownloadLink(downloadUrl);
+        } else {
+            uploadFile.setFileName("文件不存在");
+        }
+
+        return uploadFile;
+    }
+
+    /**
+     * 上传文件
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    private String uploadFile(MultipartFile multipartFile, HttpServletRequest request) {
         try {
             String prefix = getPrefix(request);
             InputStream inputStream = multipartFile.getInputStream();

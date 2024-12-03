@@ -24,6 +24,7 @@ public class FileController {
 
     /**
      * 加载配置
+     *
      * @param filename
      * @return
      */
@@ -36,50 +37,32 @@ public class FileController {
             log.error("配置加载失败");
             return Result.error("配置加载失败");
         }
-   }
-
-    /**
-     * 生成上传文件
-     * @param multipartFile
-     * @param request
-     * @return
-     */
-    private UploadFile getUploadFile(MultipartFile multipartFile, HttpServletRequest request) {
-        UploadFile uploadFile = new UploadFile();
-        if (!multipartFile.isEmpty()) {
-            String downloadUrl = botService.uploadFile(multipartFile, request);
-            uploadFile.setFileName(multipartFile.getOriginalFilename());
-            uploadFile.setDownloadLink(downloadUrl);
-        } else {
-            uploadFile.setFileName("文件不存在");
-        }
-
-        return uploadFile;
     }
-
 
     /**
      * 上传文件
+     *
      * @param multipartFile
      * @return
      */
     @PostMapping("/upload")
-    public CompletableFuture<Result<UploadFile>> uploadFile(@RequestParam("file")MultipartFile multipartFile, HttpServletRequest request) {
+    public CompletableFuture<Result<UploadFile>> uploadFile(@RequestParam("file") MultipartFile multipartFile, HttpServletRequest request) {
         return CompletableFuture.supplyAsync(() -> {
             if (multipartFile == null || multipartFile.isEmpty()) {
                 return Result.error("上传的文件为空");
             }
-            return Result.success(getUploadFile(multipartFile, request));
+            return Result.success(botService.getUploadFile(multipartFile, request));
         });
-   }
+    }
 
     /**
      * 发送消息
+     *
      * @param message
      * @return
      */
     @PostMapping("/send-message")
-    public Result<String> sendMessage(@RequestBody Message message){
+    public Result<String> sendMessage(@RequestBody Message message) {
         log.info("处理消息发送");
         if (botService.sendMessage(message.getMessage())) {
             return Result.success("消息发送成功: " + message);
@@ -90,7 +73,7 @@ public class FileController {
 
 
     @GetMapping("/fileList")
-    public Result<PageResult> getFileList(@RequestParam int page, @RequestParam int size)  {
+    public Result<PageResult> getFileList(@RequestParam int page, @RequestParam int size) {
         PageResult pageResult = botService.getFileList(page, size);
         return Result.success(pageResult);
     }
