@@ -1,5 +1,6 @@
 package com.skydevs.tgdrive.service;
 
+import com.pengrad.telegrambot.model.File;
 import com.skydevs.tgdrive.result.PageResult;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,10 +39,18 @@ public interface BotService{
 
     /**
      * 获取完整下载路径
-     * @param fileID
+     * @param file
      * @return
      */
-    String getFullDownloadPath(String fileID);
+    String getFullDownloadPath(File file);
+
+
+    /**
+     * 根据fileId获取文件
+     * @param fileId
+     * @return
+     */
+    File getFile(String fileId);
 
     /**
      * 根据ID获取文件名

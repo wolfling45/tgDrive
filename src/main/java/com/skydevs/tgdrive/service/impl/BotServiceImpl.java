@@ -253,16 +253,23 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 获取完整下载路径
-     * @param fileID
+     * @param file
      * @return
      */
-    public String getFullDownloadPath(String fileID) {
-        GetFile getFile = new GetFile(fileID);
-        GetFileResponse getFileResponse = bot.execute(getFile);
-
-        File file = getFileResponse.file();
-        log.info(bot.getFullFilePath(file));
+    public String getFullDownloadPath(File file) {
+        log.info("获取完整的下载路径: " + bot.getFullFilePath(file));
         return bot.getFullFilePath(file);
+    }
+
+    /**
+     * 根据fileId获取文件
+     * @param fileId
+     * @return
+     */
+    public File getFile(String fileId) {
+        GetFile getFile = new GetFile(fileId);
+        GetFileResponse getFileResponse = bot.execute(getFile);
+        return getFileResponse.file();
     }
 
     /**
