@@ -5,6 +5,7 @@ import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.result.PageResult;
 import com.skydevs.tgdrive.result.Result;
 import com.skydevs.tgdrive.service.BotService;
+import com.skydevs.tgdrive.service.FileService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,23 +22,9 @@ public class FileController {
 
     @Autowired
     private BotService botService;
+    @Autowired
+    private FileService fileService;
 
-    /**
-     * 加载配置
-     *
-     * @param filename
-     * @return
-     */
-    @GetMapping("/config/{filename}")
-    public Result<String> loadConfig(@PathVariable("filename") String filename) {
-        if (botService.setBotToken(filename)) {
-            log.info("加载配置成功");
-            return Result.success("配置加载成功");
-        } else {
-            log.error("配置加载失败");
-            return Result.error("配置加载失败");
-        }
-    }
 
     /**
      * 上传文件
@@ -72,9 +59,24 @@ public class FileController {
     }
 
 
+    /**
+     * 获取文件列表
+     * @param page
+     * @param size
+     * @return
+     */
     @GetMapping("/fileList")
     public Result<PageResult> getFileList(@RequestParam int page, @RequestParam int size) {
-        PageResult pageResult = botService.getFileList(page, size);
+        PageResult pageResult = fileService.getFileList(page, size);
         return Result.success(pageResult);
+    }
+
+    /**
+     * 更新文件url
+     * @return
+     */
+    @PutMapping("/file-url")
+    public Result updateFileUrl() {
+        return Result.success();
     }
 }

@@ -2,13 +2,11 @@ package com.skydevs.tgdrive.controller;
 
 import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.result.Result;
+import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Slf4j
@@ -17,6 +15,8 @@ public class ConfigController {
 
     @Autowired
     private ConfigService configService;
+    @Autowired
+    private BotService botService;
 
     // 暂时禁止，防止token泄露
     // TODO：完成用户登入
@@ -33,10 +33,32 @@ public class ConfigController {
     }
      */
 
+    /**
+     * 提交配置文件
+     * @param configForm
+     * @return
+     */
     @PostMapping()
     public Result<String> submitConfig(@RequestBody ConfigForm configForm) {
         configService.save(configForm);
         log.info("配置保存成功");
         return Result.success("配置保存成功");
+    }
+
+    /**
+     * 加载配置
+     *
+     * @param filename
+     * @return
+     */
+    @GetMapping("/{filename}")
+    public Result<String> loadConfig(@PathVariable("filename") String filename) {
+        if (botService.setBotToken(filename)) {
+            log.info("加载配置成功");
+            return Result.success("配置加载成功");
+        } else {
+            log.error("配置加载失败");
+            return Result.error("配置加载失败");
+        }
     }
 }

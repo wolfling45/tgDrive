@@ -2,7 +2,6 @@ package com.skydevs.tgdrive.service;
 
 import com.pengrad.telegrambot.model.File;
 import com.skydevs.tgdrive.dto.UploadFile;
-import com.skydevs.tgdrive.result.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -61,11 +60,4 @@ public interface BotService{
      */
     String getFileNameByID(String fileID);
 
-    /**
-     * 分页查询文件列表
-     * @param page
-     * @param size
-     * @return
-     */
-    PageResult getFileList(int page, int size);
 }

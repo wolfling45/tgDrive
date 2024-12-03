@@ -1,8 +1,6 @@
 package com.skydevs.tgdrive.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.github.pagehelper.Page;
-import com.github.pagehelper.PageHelper;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.File;
 import com.pengrad.telegrambot.model.Message;
@@ -16,13 +14,11 @@ import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.entity.BigFileInfo;
 import com.skydevs.tgdrive.entity.FileInfo;
 import com.skydevs.tgdrive.mapper.FileMapper;
-import com.skydevs.tgdrive.result.PageResult;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import com.skydevs.tgdrive.utils.UserFriendly;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,7 +35,10 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
 @Service
 @Slf4j
@@ -64,6 +63,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 设置基本配置
+     *
      * @param filename
      */
     public boolean setBotToken(String filename) {
@@ -92,6 +92,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 分块上传文件
+     *
      * @param inputStream
      * @param filename
      * @return
@@ -154,12 +155,13 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 上传块
+     *
      * @param chunkData
      * @param partName
      * @return
      * @throws EOFException
      */
-    private String uploadChunk(byte[] chunkData, String partName) throws EOFException{
+    private String uploadChunk(byte[] chunkData, String partName) throws EOFException {
         SendDocument sendDocument = new SendDocument(chatId, chunkData).fileName(partName);
         SendResponse response = bot.execute(sendDocument);
 
@@ -176,6 +178,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 生成上传文件
+     *
      * @param multipartFile
      * @param request
      * @return
@@ -196,6 +199,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 上传文件
+     *
      * @param multipartFile
      * @param request
      * @return
@@ -219,7 +223,7 @@ public class BotServiceImpl implements BotService {
                         .build();
                 fileMapper.insertFile(fileInfo);
                 return prefix + "/d/" + fileID;
-            } else if (fileIds.size() > 1){
+            } else if (fileIds.size() > 1) {
                 String fileID = createRecordFile(filename, size, fileIds);
                 FileInfo fileInfo = FileInfo.builder()
                         .fileId(fileID)
@@ -234,7 +238,7 @@ public class BotServiceImpl implements BotService {
             } else {
                 return "文件上传失败";
             }
-        }catch (IOException e) {
+        } catch (IOException e) {
             log.error("文件上传失败，响应信息：{}", e.getMessage());
             throw new RuntimeException("文件上传失败");
         }
@@ -242,6 +246,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 生成recordFile
+     *
      * @param originalFileName
      * @param fileSize
      * @param fileIds
@@ -284,6 +289,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 获取完整下载路径
+     *
      * @param file
      * @return
      */
@@ -294,6 +300,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 根据fileId获取文件
+     *
      * @param fileId
      * @return
      */
@@ -305,6 +312,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 根据文件id获取文件名
+     *
      * @param fileID
      * @return
      */
@@ -317,36 +325,15 @@ public class BotServiceImpl implements BotService {
     }
 
     /**
-     * 获取文件分页
-     * @param page
-     * @param size
-     * @return
-     */
-    @Override
-    public PageResult getFileList(int page, int size) {
-        // 设置分页
-        PageHelper.startPage(page, size);
-        Page<FileInfo> pageInfo = fileMapper.getAllFiles();
-        List<FileInfo> fileInfos = new ArrayList<>();
-        for (FileInfo fileInfo : pageInfo) {
-            FileInfo fileInfo1 = new FileInfo();
-            BeanUtils.copyProperties(fileInfo, fileInfo1);
-            fileInfos.add(fileInfo1);
-        }
-        log.info("文件分页查询");
-        return new PageResult((int) pageInfo.getTotal(), fileInfos);
-    }
-
-
-    /**
      * 发送消息
+     *
      * @param m
      */
     public boolean sendMessage(String m) {
         TelegramBot bot = new TelegramBot(botToken);
         try {
             bot.execute(new SendMessage(chatId, m));
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("消息发送失败", e);
             return false;
         }
@@ -357,6 +344,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 获取bot token
+     *
      * @return
      */
     @Override
@@ -366,6 +354,7 @@ public class BotServiceImpl implements BotService {
 
     /**
      * 获取前缀
+     *
      * @param request
      * @return
      */
