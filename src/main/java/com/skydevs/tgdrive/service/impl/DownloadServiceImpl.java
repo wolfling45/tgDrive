@@ -8,9 +8,14 @@ import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.DownloadService;
 import com.skydevs.tgdrive.utils.OkHttpClientFactory;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import org.apache.tika.Tika;
+import org.apache.tika.mime.MimeType;
+import org.apache.tika.mime.MimeTypes;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -61,7 +66,7 @@ public class DownloadServiceImpl implements DownloadService {
                 if (record != null && record.isRecordFile()) {
                     return handleRecordFile(fileID, record);
                 }
-                return handleRegularFile(fileID, inputStream2);
+                return handleRegularFile(fileID, inputStream2, inputData);
             }
         } catch (Exception e) {
             log.error("下载文件失败：" + e.getMessage(), e);
@@ -75,11 +80,26 @@ public class DownloadServiceImpl implements DownloadService {
      * @param inputStream
      * @return
      */
-    private ResponseEntity<StreamingResponseBody> handleRegularFile(String fileID, InputStream inputStream) {
+    private ResponseEntity<StreamingResponseBody> handleRegularFile(String fileID, InputStream inputStream, byte[] chunkData) {
         log.info("文件不是记录文件，直接下载文件...");
 
         File file = botService.getFile(fileID);
-        String filename = resolveFilename(fileID, null, false);
+        String filename = resolveFilename(fileID, file.filePath(), false);
+        if (filename.lastIndexOf('.') == -1) {
+            Tika tika = new Tika();
+            try (InputStream is = new ByteArrayInputStream(chunkData)) {
+                String mimeType = tika.detect(is);
+
+                String extension = getExtensionByMimeType(mimeType);
+                if (!extension.isEmpty()) {
+                    filename = filename + extension;
+                } else {
+                    log.error("未添加扩展名，扩展名检测失败");
+                }
+            } catch (Exception e) {
+                log.error("文件检测失败" + e.getCause().getMessage());
+            }
+        }
         long fullSize = file.fileSize();
 
         HttpHeaders headers = setHeaders(filename, fullSize);
@@ -92,6 +112,18 @@ public class DownloadServiceImpl implements DownloadService {
                 .headers(headers)
                 .contentType(MediaType.parseMediaType(getContentTypeFromFilename(filename)))
                 .body(streamingResponseBody);
+    }
+
+    private String getExtensionByMimeType(String mimeType) {
+        try {
+            // 使用Tika的MimeType工具获取扩展名
+            MimeTypes allTypes = MimeTypes.getDefaultMimeTypes();
+            MimeType type = allTypes.forName(mimeType);
+            return type.getExtension();
+        } catch (Exception e) {
+            log.error("无法获取扩展名");
+            return "";
+        }
     }
 
     /**
@@ -224,10 +256,8 @@ public class DownloadServiceImpl implements DownloadService {
      */
     private String resolveFilename(String fileID, String defaultName, boolean isRecordFile) {
         String filename = fileMapper.getFileNameByFileId(fileID);
-        if (isRecordFile && filename == null) {
+        if (filename == null) {
             filename = defaultName;
-        } else if (filename == null) {
-            filename = botService.getFileNameByID(fileID);
         }
         // 上传到tg的gif会被转换为MP4
         if (!isRecordFile && filename.endsWith(".gif")) {
