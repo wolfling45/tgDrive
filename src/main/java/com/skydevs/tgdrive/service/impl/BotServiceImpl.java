@@ -358,6 +358,7 @@ public class BotServiceImpl implements BotService {
      * @param request
      * @return
      */
+    @Override
     public String getPrefix(HttpServletRequest request) {
         String protocol = request.getHeader("X-Forwarded-Proto") != null ? request.getHeader("X-Forwarded-Proto") : request.getScheme(); // 先代理请求头中获取协议
         String host = request.getServerName(); // 获取主机名 localhost 或实际域名

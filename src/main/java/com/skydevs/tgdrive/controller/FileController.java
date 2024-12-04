@@ -76,7 +76,9 @@ public class FileController {
      * @return
      */
     @PutMapping("/file-url")
-    public Result updateFileUrl() {
+    public Result updateFileUrl(HttpServletRequest request) {
+        log.info("更新文件url");
+        fileService.updateUrl(request);
         return Result.success();
     }
 }

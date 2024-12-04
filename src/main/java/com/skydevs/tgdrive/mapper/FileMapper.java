@@ -28,4 +28,6 @@ public interface FileMapper {
 
     @Select("SELECT full_size FROM files where file_id = #{fileId}")
     Long getFullSizeByFileId(String fileId);
+
+    void updateUrl(String prefix);
 }

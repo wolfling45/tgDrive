@@ -5,7 +5,9 @@ import com.github.pagehelper.PageHelper;
 import com.skydevs.tgdrive.entity.FileInfo;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.result.PageResult;
+import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.FileService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,8 @@ import java.util.List;
 public class FileServiceImpl implements FileService {
     @Autowired
     private FileMapper fileMapper;
+    @Autowired
+    private BotService botService;
 
     /**
      * 获取文件分页
@@ -39,6 +43,16 @@ public class FileServiceImpl implements FileService {
         }
         log.info("文件分页查询");
         return new PageResult((int) pageInfo.getTotal(), fileInfos);
+    }
+
+    /**
+     * 更新文件url
+     * @return
+     */
+    @Override
+    public void updateUrl(HttpServletRequest request) {
+        String prefix = botService.getPrefix(request);
+        fileMapper.updateUrl(prefix);
     }
 
 }
