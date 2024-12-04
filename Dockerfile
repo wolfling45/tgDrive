@@ -5,7 +5,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 # 将 JAR 文件复制到工作目录
-COPY target/tgDrive-0.0.4-SNAPSHOT.jar app.jar
+COPY target/tgDrive-0.0.5-SNAPSHOT.jar app.jar
 
 # 容器启动时运行的命令
 CMD ["java", "-jar", "app.jar"]

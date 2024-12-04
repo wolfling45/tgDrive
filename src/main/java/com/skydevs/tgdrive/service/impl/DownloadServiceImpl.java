@@ -79,7 +79,7 @@ public class DownloadServiceImpl implements DownloadService {
         log.info("文件不是记录文件，直接下载文件...");
 
         File file = botService.getFile(fileID);
-        String filename = resolveFilename(fileID, file.filePath(), false);
+        String filename = resolveFilename(fileID, null, false);
         long fullSize = file.fileSize();
 
         HttpHeaders headers = setHeaders(filename, fullSize);
@@ -224,8 +224,10 @@ public class DownloadServiceImpl implements DownloadService {
      */
     private String resolveFilename(String fileID, String defaultName, boolean isRecordFile) {
         String filename = fileMapper.getFileNameByFileId(fileID);
-        if (filename == null) {
+        if (isRecordFile && filename == null) {
             filename = defaultName;
+        } else if (filename == null) {
+            filename = botService.getFileNameByID(fileID);
         }
         // 上传到tg的gif会被转换为MP4
         if (!isRecordFile && filename.endsWith(".gif")) {
