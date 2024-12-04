@@ -79,11 +79,8 @@ public class DownloadServiceImpl implements DownloadService {
         log.info("文件不是记录文件，直接下载文件...");
 
         File file = botService.getFile(fileID);
-        String filename = resolveFilename(fileID, file.filePath());
-        Long fullSize = fileMapper.getFullSizeByFileId(fileID);
-        if (fullSize == null || fullSize == 0) {
-            fullSize = file.fileSize();
-        }
+        String filename = resolveFilename(fileID, file.filePath(), false);
+        long fullSize = file.fileSize();
 
         HttpHeaders headers = setHeaders(filename, fullSize);
 
@@ -127,7 +124,7 @@ public class DownloadServiceImpl implements DownloadService {
         log.info("文件名为：" + record.getFileName());
         log.info("检测到记录文件，开始下载并合并分片文件...");
 
-        String filename = resolveFilename(fileID, record.getFileName());
+        String filename = resolveFilename(fileID, record.getFileName(), true);
         Long fullSize = fileMapper.getFullSizeByFileId(fileID);
 
         HttpHeaders headers = setHeaders(filename, fullSize);
@@ -225,13 +222,13 @@ public class DownloadServiceImpl implements DownloadService {
      * @param defaultName
      * @return
      */
-    private String resolveFilename(String fileID, String defaultName) {
+    private String resolveFilename(String fileID, String defaultName, boolean isRecordFile) {
         String filename = fileMapper.getFileNameByFileId(fileID);
         if (filename == null) {
             filename = defaultName;
         }
         // 上传到tg的gif会被转换为MP4
-        if (filename.endsWith(".gif")) {
+        if (!isRecordFile && filename.endsWith(".gif")) {
             filename = filename.substring(0, filename.length() - 4) + ".mp4";
         }
         return filename;

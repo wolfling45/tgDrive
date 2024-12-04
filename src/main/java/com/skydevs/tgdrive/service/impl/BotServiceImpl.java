@@ -23,10 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedInputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,10 +32,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
 
 @Service
 @Slf4j
@@ -53,6 +47,7 @@ public class BotServiceImpl implements BotService {
     private String botToken;
     private String chatId;
     private TelegramBot bot;
+    // tg bot接口限制20MB，传10MB是最佳实践
     private final int MAX_FILE_SIZE = 10 * 1024 * 1024;
     /*
     @Value("${server.port}")
@@ -110,8 +105,8 @@ public class BotServiceImpl implements BotService {
             while ((byteRead = bufferedInputStream.read(buffer)) > 0) {
                 semaphore.acquire(); // 获取许可，若没有可用许可则阻塞
 
-                // 当前块的文件名，第一块为原名
-                String partName = (partIndex == 0) ? filename : filename + "_part" + partIndex;
+                // 当前块的文件名
+                String partName = filename + "_part" + partIndex;
                 partIndex++;
 
                 // 取当前分块数据
@@ -120,18 +115,11 @@ public class BotServiceImpl implements BotService {
                 // 提交上传任务，使用CompletableFuture
                 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
                     try {
-                        int retryCont = 3;
-                        for (int i = 0; i < retryCont; i++) {
-                            try {
-                                return uploadChunk(chunkData, partName);
-                            } catch (Exception e) {
-                                if (i + 1 == retryCont) {
-                                    throw new RuntimeException("已达到重试的最大次数", e);
-                                }
-                                log.warn("正在重试第" + (i + 1) + "次");
-                            }
+                        String fileId = uploadChunk(chunkData, partName);
+                        if (fileId == null) {
+                            throw new RuntimeException("分块 " + partName + " 上传失败");
                         }
-                        throw new IllegalStateException("Unexpected state: loop exited without returning"); // 理论上不可能到这里
+                        return fileId;
                     } finally {
                         semaphore.release(); // 在任务完成后释放信号量
                     }
@@ -141,10 +129,18 @@ public class BotServiceImpl implements BotService {
 
             // 等待所有任务完成并按顺序获取结果
             List<String> fileIds = new ArrayList<>();
-            for (CompletableFuture<String> future : futures) {
-                fileIds.add(future.join()); // 按顺序等待结果
+            try {
+                for (CompletableFuture<String> future : futures) {
+                    fileIds.add(future.join()); // 按顺序等待结果
+                }
+                return fileIds;
+            } catch (CompletionException e) {
+                for (CompletableFuture<String> future : futures) {
+                    future.cancel(true);
+                }
+                executorService.shutdown();
+                throw new RuntimeException("分块上传失败: " + e.getCause().getMessage(), e);
             }
-            return fileIds;
         } catch (IOException | InterruptedException e) {
             log.error("文件流读取失败或上传失败：{}", e.getMessage());
             throw new RuntimeException("文件流读取失败或上传");
@@ -161,18 +157,43 @@ public class BotServiceImpl implements BotService {
      * @return
      * @throws EOFException
      */
-    private String uploadChunk(byte[] chunkData, String partName) throws EOFException {
+    private String uploadChunk(byte[] chunkData, String partName) {
         SendDocument sendDocument = new SendDocument(chatId, chunkData).fileName(partName);
         SendResponse response = bot.execute(sendDocument);
 
-        // 检查响应
-        if (response.isOk() && response.message() != null && (response.message().document() != null || response.message().sticker() != null)) {
-            String fileID = response.message().document().fileId() != null ? response.message().document().fileId() : response.message().sticker().fileId();
-            log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
-            return fileID;
-        } else {
-            log.error("分块上传失败，响应信息：{}", response.description());
-            throw new RuntimeException("分块上传失败");
+        int retryCount = 3;
+        for (int i = 1; i <= retryCount; i++) {
+            // 检查响应
+            if (response.isOk() && response.message() != null && (response.message().document() != null || response.message().sticker() != null)) {
+                String fileID = response.message().document().fileId() != null ? response.message().document().fileId() : response.message().sticker().fileId();
+                log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
+                return fileID;
+            } else {
+                log.warn("正在重试第" + i + "次");
+            }
+        }
+        log.error("分块上传失败，响应信息：{}", response.description());
+        return null;
+    }
+
+    /**
+     * 上传单文件（为了使gif能正常显示，gif上传到tg后，会被转换为MP4）
+     * @param inputStream
+     * @param filename
+     * @return
+     */
+    private String uploadOneFile(InputStream inputStream, String filename) {
+        try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+            byte[] data = new byte[8192];
+            int byteRead;
+            while ((byteRead = inputStream.read(data)) != -1) {
+                buffer.write(data, 0, byteRead);
+            }
+            byte[] chunkData = buffer.toByteArray();
+            return uploadChunk(chunkData, filename);
+        } catch (Exception e) {
+            log.error("文件上传失败 :" + e.getMessage());
+            return null;
         }
     }
 
@@ -210,20 +231,8 @@ public class BotServiceImpl implements BotService {
             InputStream inputStream = multipartFile.getInputStream();
             String filename = multipartFile.getOriginalFilename();
             long size = multipartFile.getSize();
-            List<String> fileIds = sendFileStreamInChunks(inputStream, filename);
-            if (fileIds.size() == 1) {
-                String fileID = fileIds.get(0);
-                FileInfo fileInfo = FileInfo.builder()
-                        .fileId(fileID)
-                        .size(userFriendly.humanReadableFileSize(size))
-                        .fullSize(size)
-                        .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
-                        .downloadUrl(prefix + "/d/" + fileID)
-                        .fileName(filename)
-                        .build();
-                fileMapper.insertFile(fileInfo);
-                return prefix + "/d/" + fileID;
-            } else if (fileIds.size() > 1) {
+            if (size > MAX_FILE_SIZE) {
+                List<String> fileIds = sendFileStreamInChunks(inputStream, filename);
                 String fileID = createRecordFile(filename, size, fileIds);
                 FileInfo fileInfo = FileInfo.builder()
                         .fileId(fileID)
@@ -236,9 +245,19 @@ public class BotServiceImpl implements BotService {
                 fileMapper.insertFile(fileInfo);
                 return prefix + "/d/" + fileID;
             } else {
-                return "文件上传失败";
+                String fileID = uploadOneFile(inputStream, filename);
+                FileInfo fileInfo = FileInfo.builder()
+                        .fileId(fileID)
+                        .size(userFriendly.humanReadableFileSize(size))
+                        .fullSize(size)
+                        .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
+                        .downloadUrl(prefix + "/d/" + fileID)
+                        .fileName(filename)
+                        .build();
+                fileMapper.insertFile(fileInfo);
+                return prefix + "/d/" + fileID;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("文件上传失败，响应信息：{}", e.getMessage());
             throw new RuntimeException("文件上传失败");
         }
