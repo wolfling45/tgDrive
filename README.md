@@ -32,7 +32,7 @@
 在项目根目录创建 `docker-compose.yml` 文件，内容如下：
 
 > [!TIP]
-> 如果服务器的性能不足，建议使用镜像名nanyangzesi/tgdrive:server-latest
+> 如果服务器的性能不足（RAM <= 512MB），建议使用镜像名nanyangzesi/tgdrive:server-latest （这是减少了线程的版本）
 
 ```yaml
 version: '3.8'
