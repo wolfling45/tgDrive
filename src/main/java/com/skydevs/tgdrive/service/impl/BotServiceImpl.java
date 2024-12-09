@@ -247,7 +247,12 @@ public class BotServiceImpl implements BotService {
                 fileMapper.insertFile(fileInfo);
                 return prefix + "/d/" + fileID;
             } else {
-                String fileID = uploadOneFile(inputStream, filename);
+                // 小于10MB的GIF会被TG转换为MP4，对文件后缀进行处理
+                String uploadFilename = filename;
+                if (filename != null && filename.endsWith(".gif")) {
+                    uploadFilename = filename.substring(0, filename.lastIndexOf(".gif"));
+                }
+                String fileID = uploadOneFile(inputStream, uploadFilename);
                 FileInfo fileInfo = FileInfo.builder()
                         .fileId(fileID)
                         .size(userFriendly.humanReadableFileSize(size))

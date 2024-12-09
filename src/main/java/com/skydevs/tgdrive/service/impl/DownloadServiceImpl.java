@@ -84,7 +84,7 @@ public class DownloadServiceImpl implements DownloadService {
         log.info("文件不是记录文件，直接下载文件...");
 
         File file = botService.getFile(fileID);
-        String filename = resolveFilename(fileID, file.filePath(), false);
+        String filename = resolveFilename(fileID, file.filePath());
         if (filename.lastIndexOf('.') == -1) {
             Tika tika = new Tika();
             try (InputStream is = new ByteArrayInputStream(chunkData)) {
@@ -156,7 +156,7 @@ public class DownloadServiceImpl implements DownloadService {
         log.info("文件名为：" + record.getFileName());
         log.info("检测到记录文件，开始下载并合并分片文件...");
 
-        String filename = resolveFilename(fileID, record.getFileName(), true);
+        String filename = resolveFilename(fileID, record.getFileName());
         Long fullSize = fileMapper.getFullSizeByFileId(fileID);
 
         HttpHeaders headers = setHeaders(filename, fullSize);
@@ -254,22 +254,19 @@ public class DownloadServiceImpl implements DownloadService {
      * @param defaultName
      * @return
      */
-    private String resolveFilename(String fileID, String defaultName, boolean isRecordFile) {
+    private String resolveFilename(String fileID, String defaultName) {
         String filename = fileMapper.getFileNameByFileId(fileID);
         if (filename == null) {
             filename = defaultName;
         }
-        // 上传到tg的gif会被转换为MP4
-        if (!isRecordFile && filename.endsWith(".gif")) {
-            filename = filename.substring(0, filename.length() - 4) + ".mp4";
-        }
+
         return filename;
     }
 
     /**
      * 尝试转换为大文件的记录文件
-     * @param inputStream
-     * @return
+     * @param inputStream 下载的文件的输入流
+     * @return BigFilInfo
      */
     private BigFileInfo parseBigFileInfo(InputStream inputStream) {
         try {
@@ -391,34 +388,17 @@ public class DownloadServiceImpl implements DownloadService {
         if (contentType == null) {
             // 手动映射常见的文件扩展名到 MIME 类型
             String extension = getFileExtension(filename).toLowerCase();
-            switch (extension) {
-                case "gif":
-                    contentType = "image/gif";
-                    break;
-                case "jpg":
-                case "jpeg":
-                    contentType = "image/jpeg";
-                    break;
-                case "png":
-                    contentType = "image/png";
-                    break;
-                case "bmp":
-                    contentType = "image/bmp";
-                    break;
-                case "txt":
-                    contentType = "text/plain";
-                    break;
-                case "pdf":
-                    contentType = "application/pdf";
-                    break;
-                case "mp4":
-                    contentType = "video/mp4";
-                    break;
+            contentType = switch (extension) {
+                case "gif" -> "image/gif";
+                case "jpg", "jpeg" -> "image/jpeg";
+                case "png" -> "image/png";
+                case "bmp" -> "image/bmp";
+                case "txt" -> "text/plain";
+                case "pdf" -> "application/pdf";
+                case "mp4" -> "video/mp4";
                 // 添加其他需要的类型
-                default:
-                    contentType = "application/octet-stream";
-                    break;
-            }
+                default -> "application/octet-stream";
+            };
         }
         return contentType;
     }
