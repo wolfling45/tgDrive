@@ -225,7 +225,7 @@ public class BotServiceImpl implements BotService {
      *
      * @param multipartFile
      * @param request
-     * @return
+     * @return 文件下载地址
      */
     private String uploadFile(MultipartFile multipartFile, HttpServletRequest request) {
         try {
