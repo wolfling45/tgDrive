@@ -6,10 +6,11 @@
 
 ## Features
 
+- **Break through the 20MB limit of the Telegram Bot API**: Enable uploading and downloading of files and images larger than 20MB.
 - **Multi-threaded Upload and Download**: Maximizes Telegram’s speed limit for efficient file transfers.
 - **Image Hotlinking**: Provides direct download links for displaying images in a browser.
 - **PicGo Support**: Seamless integration with PicGo for quick image uploads.
-- **GIF Support**: Resolves Telegram’s conversion of GIFs to MP4. (Currently supports GIF files larger than 10MB.)
+- **GIF Support**: Resolves Telegram’s conversion of GIFs to MP4.
 
 ![tgDrive Upload Interface](https://github.com/user-attachments/assets/5cbe3228-e425-4ece-84ac-6f1616f54be9)
 

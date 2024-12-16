@@ -10,7 +10,7 @@
 - **多线程上传下载**：尽可能达到 Telegram 的速率上限，实现高效文件传输。
 - **支持图片外链**：可直接访问下载链接，在浏览器中展示图片。
 - **PicGo 支持**：结合 PicGo 使用，实现快速图床上传。
-- **GIF 支持**：解决 Telegram 将 GIF 转为 MP4 的问题。（目前仅支持大于10MB的GIF文件）
+- **GIF 支持**：解决 Telegram 将 GIF 转为 MP4 的问题。
 
 ![tgDrive 上传界面展示](https://github.com/user-attachments/assets/5cbe3228-e425-4ece-84ac-6f1616f54be9)
 
