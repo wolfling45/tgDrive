@@ -1,11 +1,13 @@
 package com.skydevs.tgdrive.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.result.Result;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,9 +20,7 @@ public class ConfigController {
     @Autowired
     private BotService botService;
 
-    // 暂时禁止，防止token泄露
-    // TODO：完成用户登入
-    /*
+    @SaCheckLogin
     @GetMapping()
     public ResponseEntity<ConfigForm> getConfig(@RequestParam String name) {
         ConfigForm config = configService.get(name);
@@ -31,13 +31,13 @@ public class ConfigController {
         log.info("获取数据成功");
         return ResponseEntity.ok(config);
     }
-     */
 
     /**
      * 提交配置文件
      * @param configForm
      * @return
      */
+    @SaCheckLogin
     @PostMapping()
     public Result<String> submitConfig(@RequestBody ConfigForm configForm) {
         configService.save(configForm);
@@ -48,9 +48,10 @@ public class ConfigController {
     /**
      * 加载配置
      *
-     * @param filename
+     * @param filename 配置文件名
      * @return
      */
+    @SaCheckLogin
     @GetMapping("/{filename}")
     public Result<String> loadConfig(@PathVariable("filename") String filename) {
         if (botService.setBotToken(filename)) {
