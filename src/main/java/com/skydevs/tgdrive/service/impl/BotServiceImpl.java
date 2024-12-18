@@ -13,6 +13,8 @@ import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.entity.BigFileInfo;
 import com.skydevs.tgdrive.entity.FileInfo;
+import com.skydevs.tgdrive.exception.ConfigFileNotFoundException;
+import com.skydevs.tgdrive.exception.GetBotTokenFailedException;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
@@ -61,20 +63,20 @@ public class BotServiceImpl implements BotService {
     /**
      * 设置基本配置
      *
-     * @param filename
+     * @param filename 配置文件名
      */
-    public boolean setBotToken(String filename) {
+    public void setBotToken(String filename) {
         ConfigForm config = configService.get(filename);
         if (config == null) {
             log.error("配置文件不存在");
-            return false;
+            throw new ConfigFileNotFoundException();
         }
         try {
             botToken = config.getToken();
             chatId = config.getTarget();
         } catch (Exception e) {
             log.error("获取Bot Token失败: {}", e.getMessage());
-            return false;
+            throw new GetBotTokenFailedException();
         }
         /*
         if (appConfig.getUrl() == null || appConfig.getUrl().isEmpty()) {
@@ -84,7 +86,6 @@ public class BotServiceImpl implements BotService {
         }
          */
         bot = new TelegramBot(botToken);
-        return true;
     }
 
     /**

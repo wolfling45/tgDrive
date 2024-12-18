@@ -1,5 +1,6 @@
 package com.skydevs.tgdrive.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.skydevs.tgdrive.dto.Message;
 import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.result.PageResult;
@@ -65,6 +66,7 @@ public class FileController {
      * @param size
      * @return
      */
+    @SaCheckLogin
     @GetMapping("/fileList")
     public Result<PageResult> getFileList(@RequestParam int page, @RequestParam int size) {
         PageResult pageResult = fileService.getFileList(page, size);
@@ -75,6 +77,7 @@ public class FileController {
      * 更新文件url
      * @return
      */
+    @SaCheckLogin
     @PutMapping("/file-url")
     public Result updateFileUrl(HttpServletRequest request) {
         log.info("更新文件url");

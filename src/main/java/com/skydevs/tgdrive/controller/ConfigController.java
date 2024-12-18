@@ -2,6 +2,7 @@ package com.skydevs.tgdrive.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.skydevs.tgdrive.dto.ConfigForm;
+import com.skydevs.tgdrive.exception.ConfigFileNotFoundException;
 import com.skydevs.tgdrive.result.Result;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
@@ -26,7 +27,7 @@ public class ConfigController {
         ConfigForm config = configService.get(name);
         if (config == null) {
             log.error("配置获取失败，请检查文件名是否错误");
-            return null;
+            throw new ConfigFileNotFoundException();
         }
         log.info("获取数据成功");
         return ResponseEntity.ok(config);
@@ -54,12 +55,8 @@ public class ConfigController {
     @SaCheckLogin
     @GetMapping("/{filename}")
     public Result<String> loadConfig(@PathVariable("filename") String filename) {
-        if (botService.setBotToken(filename)) {
-            log.info("加载配置成功");
-            return Result.success("配置加载成功");
-        } else {
-            log.error("配置加载失败");
-            return Result.error("配置加载失败");
-        }
+        botService.setBotToken(filename);
+        log.info("加载配置成功");
+        return Result.success("配置加载成功");
     }
 }

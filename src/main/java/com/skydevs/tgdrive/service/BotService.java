@@ -27,7 +27,7 @@ public interface BotService{
      * 根据文件名设置botToken
      * @param filename
      */
-    boolean setBotToken(String filename);
+    void setBotToken(String filename);
 
 
     /**

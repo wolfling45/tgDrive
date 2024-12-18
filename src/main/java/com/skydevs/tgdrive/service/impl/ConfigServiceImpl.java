@@ -21,8 +21,7 @@ public class ConfigServiceImpl implements ConfigService {
      */
     @Override
     public ConfigForm get(String filename) {
-        ConfigForm config = configMapper.getByName(filename);
-        return config;
+        return configMapper.getByName(filename);
     }
 
     /**

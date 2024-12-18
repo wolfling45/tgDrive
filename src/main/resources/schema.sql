@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- 插入初始管理员账户，防止重复插入
 INSERT INTO users (username, password, role)
-SELECT 'admin', '827ccb0eea8a706c4c34a16891f84e7b', 'admin'
+SELECT 'admin', 'e10adc3949ba59abbe56e057f20f883e', 'admin'
 WHERE NOT EXISTS (
     SELECT 1 FROM users WHERE username = 'admin'
 );

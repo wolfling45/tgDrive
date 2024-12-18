@@ -20,6 +20,11 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    /**
+     * 用户登入
+     * @param authRequest 用户名、密码
+     * @return 登入状态
+     */
     @PostMapping("/login")
     public Result<UserLogin> login(@RequestBody AuthRequest authRequest) {
         // 验证用户名和密码
@@ -32,6 +37,7 @@ public class UserController {
                 .role(user.getRole())
                 .build();
 
+        log.info(user.getId() + "登入");
         return Result.success(userLogin);
     }
 }
