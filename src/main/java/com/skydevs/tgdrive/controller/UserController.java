@@ -2,6 +2,7 @@ package com.skydevs.tgdrive.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.skydevs.tgdrive.dto.AuthRequest;
+import com.skydevs.tgdrive.dto.ChangePasswordRequest;
 import com.skydevs.tgdrive.dto.UserLogin;
 import com.skydevs.tgdrive.entity.User;
 import com.skydevs.tgdrive.result.Result;
@@ -39,5 +40,15 @@ public class UserController {
 
         log.info(user.getId() + "登入");
         return Result.success(userLogin);
+    }
+
+    @PostMapping("change-password")
+    public Result<String> changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
+        long userId = StpUtil.getLoginIdAsLong();
+
+        userService.changePassword(userId, changePasswordRequest);
+
+        log.info(userId + "密码修改成功");
+        return Result.success("密码修改成功");
     }
 }

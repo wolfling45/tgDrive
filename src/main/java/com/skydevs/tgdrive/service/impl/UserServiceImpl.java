@@ -1,6 +1,7 @@
 package com.skydevs.tgdrive.service.impl;
 
 import com.skydevs.tgdrive.dto.AuthRequest;
+import com.skydevs.tgdrive.dto.ChangePasswordRequest;
 import com.skydevs.tgdrive.entity.User;
 import com.skydevs.tgdrive.exception.PasswordErrorException;
 import com.skydevs.tgdrive.exception.UserNotFoundException;
@@ -45,5 +46,29 @@ public class UserServiceImpl implements UserService {
         }
 
         return user;
+    }
+
+    /**
+     * 修改密码
+     * @param changePasswordRequest 新老密码
+     */
+    @Override
+    public void changePassword(long id, ChangePasswordRequest changePasswordRequest) {
+        // 查找用户
+        User user = userMapper.getUserById(id);
+
+        if (user == null) {
+            throw new UserNotFoundException();
+        }
+
+        // 检查旧密码是否相符
+        String password = DigestUtils.md5DigestAsHex(changePasswordRequest.getOldPassword().getBytes());
+        if (!password.equals(user.getPassword())) {
+            throw new PasswordErrorException("原密码错误");
+        }
+
+        // 更新密码
+        String newPassword = DigestUtils.md5DigestAsHex(changePasswordRequest.getNewPassword().getBytes());
+        userMapper.updatePassword(id, newPassword);
     }
 }

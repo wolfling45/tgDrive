@@ -1,6 +1,7 @@
 package com.skydevs.tgdrive.service;
 
 import com.skydevs.tgdrive.dto.AuthRequest;
+import com.skydevs.tgdrive.dto.ChangePasswordRequest;
 import com.skydevs.tgdrive.entity.User;
 
 public interface UserService {
@@ -11,4 +12,10 @@ public interface UserService {
      * @return User
      */
     User login(AuthRequest authRequest);
+
+    /**
+     * 修改密码
+     * @param changePasswordRequest 新老密码
+     */
+    void changePassword(long id, ChangePasswordRequest changePasswordRequest);
 }
