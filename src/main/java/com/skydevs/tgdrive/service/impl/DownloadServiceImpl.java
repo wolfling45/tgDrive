@@ -3,6 +3,7 @@ package com.skydevs.tgdrive.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.pengrad.telegrambot.model.File;
 import com.skydevs.tgdrive.entity.BigFileInfo;
+import com.skydevs.tgdrive.exception.BotNotSetException;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.DownloadService;
@@ -68,9 +69,11 @@ public class DownloadServiceImpl implements DownloadService {
                 }
                 return handleRegularFile(fileID, inputStream2, inputData);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("下载文件失败：" + e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        } catch (NullPointerException e) {
+            throw new BotNotSetException();
         }
     }
 

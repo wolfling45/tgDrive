@@ -13,9 +13,7 @@ import com.skydevs.tgdrive.dto.ConfigForm;
 import com.skydevs.tgdrive.dto.UploadFile;
 import com.skydevs.tgdrive.entity.BigFileInfo;
 import com.skydevs.tgdrive.entity.FileInfo;
-import com.skydevs.tgdrive.exception.ConfigFileNotFoundException;
-import com.skydevs.tgdrive.exception.GetBotTokenFailedException;
-import com.skydevs.tgdrive.exception.NoConfigException;
+import com.skydevs.tgdrive.exception.*;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
@@ -163,21 +161,24 @@ public class BotServiceImpl implements BotService {
      */
     private String uploadChunk(byte[] chunkData, String partName) {
         SendDocument sendDocument = new SendDocument(chatId, chunkData).fileName(partName);
-        SendResponse response = bot.execute(sendDocument);
+        try {
+            SendResponse response = bot.execute(sendDocument);
 
-        int retryCount = 3;
-        for (int i = 1; i <= retryCount; i++) {
-            // 检查响应
-            if (response.isOk() && response.message() != null && (response.message().document() != null || response.message().sticker() != null)) {
-                String fileID = response.message().document().fileId() != null ? response.message().document().fileId() : response.message().sticker().fileId();
-                log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
-                return fileID;
-            } else {
-                log.warn("正在重试第" + i + "次");
+            int retryCount = 3;
+            for (int i = 1; i <= retryCount; i++) {
+                // 检查响应
+                if (response.isOk() && response.message() != null && (response.message().document() != null || response.message().sticker() != null)) {
+                    String fileID = response.message().document().fileId() != null ? response.message().document().fileId() : response.message().sticker().fileId();
+                    log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
+                    return fileID;
+                } else {
+                    log.warn("正在重试第" + i + "次");
+                }
             }
+            throw new NoConnectionException();
+        }catch (NullPointerException e) {
+            throw new BotNotSetException();
         }
-        log.error("分块上传失败，响应信息：{}", response.description());
-        return null;
     }
 
     /**
@@ -195,7 +196,7 @@ public class BotServiceImpl implements BotService {
             }
             byte[] chunkData = buffer.toByteArray();
             return uploadChunk(chunkData, filename);
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("文件上传失败 :" + e.getMessage());
             return null;
         }
@@ -266,7 +267,7 @@ public class BotServiceImpl implements BotService {
                 fileMapper.insertFile(fileInfo);
                 return prefix + "/d/" + fileID;
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("文件上传失败，响应信息：{}", e.getMessage());
             throw new RuntimeException("文件上传失败");
         }
