@@ -5,7 +5,7 @@ server:
     connection-timeout: 60000
 
 sa-token:
-  token-name: satoken      # token名称（默认：satoken）
+  token-name: tgdrive      # token名称（默认：satoken）
   timeout: 36000000        # token有效期，单位：秒（默认30分钟）
   is-concurrent: true     # 是否允许同一账号多地登录（默认：true）
   is-share: true           # 是否在同一个会话中共享 Token（默认：true）
