@@ -14,7 +14,7 @@
 
 ![tgDrive 上传界面展示](https://github.com/user-attachments/assets/5cbe3228-e425-4ece-84ac-6f1616f54be9)
 
-[Render 部署的站点（推荐）](https://render.skydevs.link/upload)  |  [demo 站点](https://server.skydevs.link/upload)
+[Render 部署的站点（推荐）](https://render.skydevs.link)  |  [demo 站点](https://server.skydevs.link)
 
 前端代码地址：[tgDriveFront](https://github.com/SkyDependence/tgDrive-front)
 
