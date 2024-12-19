@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface ConfigMapper {
     /**
@@ -29,4 +31,11 @@ public interface ConfigMapper {
      */
     @Delete("DELETE FROM configs where name = #{name}")
     void deleteByName(String name);
+
+    /**
+     * 获取所有配置文件
+     * @return
+     */
+    @Select("SELECT * FROM configs")
+    List<ConfigForm> getAll();
 }

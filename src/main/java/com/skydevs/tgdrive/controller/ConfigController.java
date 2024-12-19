@@ -8,8 +8,9 @@ import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @Slf4j
@@ -21,16 +22,32 @@ public class ConfigController {
     @Autowired
     private BotService botService;
 
+    /**
+     * 获取配置文件信息
+     * @param name 配置文件名
+     * @return ConfigForm
+     */
     @SaCheckLogin
     @GetMapping()
-    public ResponseEntity<ConfigForm> getConfig(@RequestParam String name) {
+    public Result<ConfigForm> getConfig(@RequestParam String name) {
         ConfigForm config = configService.get(name);
         if (config == null) {
             log.error("配置获取失败，请检查文件名是否错误");
             throw new ConfigFileNotFoundException();
         }
         log.info("获取数据成功");
-        return ResponseEntity.ok(config);
+        return Result.success(config);
+    }
+
+    /**
+     * 获取所有配置文件
+     * @return
+     */
+    @SaCheckLogin
+    @GetMapping("/configs")
+    public Result<List<ConfigForm>> getConfigs() {
+        List<ConfigForm> configForms = configService.getForms();
+        return Result.success(configForms);
     }
 
     /**

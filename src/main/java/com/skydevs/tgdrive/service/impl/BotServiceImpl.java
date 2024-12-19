@@ -15,6 +15,7 @@ import com.skydevs.tgdrive.entity.BigFileInfo;
 import com.skydevs.tgdrive.entity.FileInfo;
 import com.skydevs.tgdrive.exception.ConfigFileNotFoundException;
 import com.skydevs.tgdrive.exception.GetBotTokenFailedException;
+import com.skydevs.tgdrive.exception.NoConfigException;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
@@ -333,8 +334,13 @@ public class BotServiceImpl implements BotService {
      */
     public File getFile(String fileId) {
         GetFile getFile = new GetFile(fileId);
-        GetFileResponse getFileResponse = bot.execute(getFile);
-        return getFileResponse.file();
+        try {
+            GetFileResponse getFileResponse = bot.execute(getFile);
+            return getFileResponse.file();
+        } catch (NullPointerException e) {
+            log.error("当前未加载配置文件！" + e.getMessage());
+            throw new NoConfigException("当前未加载配置文件！");
+        }
     }
 
     /**

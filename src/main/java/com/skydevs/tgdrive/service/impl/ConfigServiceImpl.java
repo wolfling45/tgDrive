@@ -1,11 +1,14 @@
 package com.skydevs.tgdrive.service.impl;
 
 import com.skydevs.tgdrive.dto.ConfigForm;
+import com.skydevs.tgdrive.exception.NoConfigException;
 import com.skydevs.tgdrive.mapper.ConfigMapper;
 import com.skydevs.tgdrive.service.ConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -37,5 +40,18 @@ public class ConfigServiceImpl implements ConfigService {
             configMapper.deleteByName(configForm.getName());
             configMapper.insert(configForm);
         }
+    }
+
+    /**
+     * 获取所有配置文件
+     * @return
+     */
+    @Override
+    public List<ConfigForm> getForms() {
+        List<ConfigForm> configForms =  configMapper.getAll();
+        if (configForms == null) {
+            throw new NoConfigException();
+        }
+        return configForms;
     }
 }

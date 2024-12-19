@@ -42,6 +42,11 @@ public class UserController {
         return Result.success(userLogin);
     }
 
+    /**
+     * 修改密码
+     * @param changePasswordRequest 修改密码请求
+     * @return
+     */
     @PostMapping("change-password")
     public Result<String> changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
         long userId = StpUtil.getLoginIdAsLong();
