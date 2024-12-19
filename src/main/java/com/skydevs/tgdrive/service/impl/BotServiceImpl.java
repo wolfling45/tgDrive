@@ -49,7 +49,7 @@ public class BotServiceImpl implements BotService {
     private String chatId;
     private TelegramBot bot;
     // 控制同时运行的任务数量
-    private final int permits = 5;
+    private final int PERMITS = 5;
     // tg bot接口限制20MB，传10MB是最佳实践
     private final int MAX_FILE_SIZE = 10 * 1024 * 1024;
     /*
@@ -96,8 +96,8 @@ public class BotServiceImpl implements BotService {
      */
     private List<String> sendFileStreamInChunks(InputStream inputStream, String filename) {
         List<CompletableFuture<String>> futures = new ArrayList<>();
-        ExecutorService executorService = Executors.newFixedThreadPool(permits); // 线程池大小
-        Semaphore semaphore = new Semaphore(permits); // 控制同时运行的任务数量
+        ExecutorService executorService = Executors.newFixedThreadPool(PERMITS); // 线程池大小
+        Semaphore semaphore = new Semaphore(PERMITS); // 控制同时运行的任务数量
 
         try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream)) {
             byte[] buffer = new byte[MAX_FILE_SIZE]; // 10MB 缓冲区
