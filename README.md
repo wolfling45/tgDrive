@@ -181,12 +181,23 @@ docker run -d -p 8085:8085 --name tgdrive --restart always nanyangzesi/tgdrive:l
 
 ## 使用说明
 
+访问你部署项目的网址后，会出现如下页面：
 
+![主页](https://github.com/user-attachments/assets/ede633bb-053a-49e4-ab2b-faff3c688c77)
+
+点击管理界面，填写bot token：
+
+![image](https://github.com/user-attachments/assets/83d05394-caf1-46ce-acdf-9b9c5611294e)
+
+bot token和chatID不知道如何获取？看[这篇文章](https://skydevs.link/posts/tech/telegram_bot)
+
+填完后点击提交配置，下拉，选择你刚刚填写的配置文件加载，就能进行上传了：
+
+![image](https://github.com/user-attachments/assets/25d1fd3d-d390-4674-9d77-d0d9bc1153fa)
 
 ## 进阶配置
 
 ### PicGo 配置
-
 
 > [!TIP]
 > 从 v0.0.4+ 开始支持 PicGo。
