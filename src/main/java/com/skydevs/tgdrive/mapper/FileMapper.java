@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface FileMapper {
 
@@ -13,7 +15,7 @@ public interface FileMapper {
      * 插入已上传文件
      * @param fileInfo
      */
-    @Insert("INSERT INTO files (file_name, download_url, upload_time, file_id, size, full_size) VALUES (#{fileName}, #{downloadUrl}, #{uploadTime}, #{fileId}, #{size}, #{fullSize})")
+    @Insert("INSERT INTO files (file_name, download_url, upload_time, file_id, size, full_size, webdav_path) VALUES (#{fileName}, #{downloadUrl}, #{uploadTime}, #{fileId}, #{size}, #{fullSize}, #{webdavPath})")
     void insertFile(FileInfo fileInfo);
 
     /**
@@ -30,4 +32,13 @@ public interface FileMapper {
     Long getFullSizeByFileId(String fileId);
 
     void updateUrl(String prefix);
+
+    @Select("SELECT * FROM files WHERE webdav_path = #{path}")
+    FileInfo getFileByWebdavPath(String path);
+
+    @Select("SELECT * FROM files WHERE webdav_path LIKE #{path} || '%'")
+    List<FileInfo> getFilesByPathPrefix(String path);
+
+    @Select("DELETE FROM files WHERE file_id = #{fileId}")
+    void deleteFile(String fileId);
 }

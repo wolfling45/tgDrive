@@ -4,6 +4,7 @@ import com.pengrad.telegrambot.model.File;
 import com.skydevs.tgdrive.dto.UploadFile;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
+import java.io.InputStream;
 
 /**
  * 机器人服务类，用于初始化机器人和运行机器人相关服务
@@ -66,4 +67,24 @@ public interface BotService{
      */
     String getFileNameByID(String fileID);
 
+    /**
+     * 上传文件到Telegram
+     * @param inputStream 文件输入流
+     * @param path 文件路径
+     * @return 文件ID
+     */
+    String uploadFile(InputStream inputStream, String path);
+
+    /**
+     * 从Telegram下载文件
+     * @param fileId 文件ID
+     * @return 文件输入流
+     */
+    InputStream downloadFile(String fileId);
+
+    /**
+     * 从Telegram删除文件
+     * @param fileId 文件ID
+     */
+    void deleteFile(String fileId);
 }

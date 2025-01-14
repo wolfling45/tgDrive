@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UserFriendly {
-    public String humanReadableFileSize(long size) {
+    public static String humanReadableFileSize(long size) {
         if (size <= 0) return "0 B";
         final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
         int unitIndex = (int) (Math.log10(size) / Math.log10(1024));

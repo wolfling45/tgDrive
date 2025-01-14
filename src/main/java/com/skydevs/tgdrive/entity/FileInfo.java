@@ -19,5 +19,8 @@ public class FileInfo {
     // 用于存储上传时间的 UNIX 时间戳
     private Long uploadTime;
 
+    // WebDAV文件路径
+    private String webdavPath;
+
 }
 
