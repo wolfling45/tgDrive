@@ -4,7 +4,9 @@ CREATE TABLE IF NOT EXISTS files (
     download_url TEXT NOT NULL,
     upload_time INTEGER NOT NULL,
     size TEXT NOT NULL,
-    file_id TEXT NOT NULL
+    full_size TEXT,
+    file_id TEXT NOT NULL,
+    webdav_path TEXT
 );
 
 CREATE TABLE IF NOT EXISTS configs (
@@ -32,3 +34,4 @@ SELECT 'admin', 'e10adc3949ba59abbe56e057f20f883e', 'admin'
 WHERE NOT EXISTS (
     SELECT 1 FROM users WHERE username = 'admin'
 );
+

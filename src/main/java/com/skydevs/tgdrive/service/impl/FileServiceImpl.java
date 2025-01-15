@@ -134,7 +134,7 @@ public class FileServiceImpl implements FileService {
             result.put("files", files.stream()
                 .map(file -> Map.of(
                     "name", file.getFileName(),
-                    "size", file.getSize(),
+                    "size", file.getFullSize(),
                     "modified", file.getUploadTime()
                 ))
                 .collect(Collectors.toList()));

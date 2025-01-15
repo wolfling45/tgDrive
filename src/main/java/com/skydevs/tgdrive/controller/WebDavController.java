@@ -12,6 +12,13 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.catalina.manager.JspHelper.escapeXml;
 
 @RestController
 @Slf4j
@@ -20,6 +27,11 @@ public class WebDavController {
     @Autowired
     private FileService fileService;
 
+    /**
+     * 上传文件
+     * @param request
+     * @return
+     */
     @PutMapping("/**")
     public Result<Void> handlePut(HttpServletRequest request) {
         try (InputStream inputStream = request.getInputStream()) {
@@ -31,15 +43,25 @@ public class WebDavController {
         }
     }
 
-    @GetMapping("/{path:.+}")
-    public ResponseEntity<StreamingResponseBody> handleGet(@PathVariable String path) {
-        return fileService.downloadFromTelegram(path)
+    /**
+     * 下载文件
+     * @param
+     * @return
+     */
+    @GetMapping("/**")
+    public ResponseEntity<StreamingResponseBody> handleGet(HttpServletRequest request) {
+        return fileService.downloadFromTelegram(request.getRequestURI().substring("/webdav".length()))
                 .map(stream -> ResponseEntity.ok()
                         .header("Content-Disposition", "attachment")
                         .body(stream))
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * 删除文件
+     * @param path
+     * @return
+     */
     @DeleteMapping("/{path:.+}")
     public Result<Void> handleDelete(@PathVariable String path) {
         try {
@@ -51,6 +73,10 @@ public class WebDavController {
         }
     }
 
+    /**
+     * 处理探测请求
+     * @param response
+     */
     @RequestMapping(value = "/**", method = RequestMethod.OPTIONS)
     public void handleOptions(HttpServletResponse response) {
         response.setHeader("Allow", "OPTIONS, HEAD, GET, POST, PROPFIND, MKCOL, MOVE, COPY");
@@ -58,6 +84,12 @@ public class WebDavController {
         response.setStatus(HttpServletResponse.SC_OK);
     }
 
+    /**
+     * 处理特殊的webdav方法
+     * @param request
+     * @param response
+     * @throws IOException
+     */
     @RequestMapping(value = "/dispatch/**", method = {RequestMethod.POST})
     public void handleWebDav(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String realMethod = (String) request.getAttribute("X-HTTP-Method-Override");
@@ -99,61 +131,86 @@ public class WebDavController {
 
     }
 
-    private void handlePropFind(HttpServletRequest request, HttpServletResponse response) throws IOException{
-        log.info("处理 PROPFIND...");
-        // 返回一个示例 Multi-Status
+    /**
+     * 处理目录探测
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    private static final DateTimeFormatter RFC1123_FORMATTER =
+            DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneId.of("GMT"));
+
+    private void handlePropFind(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setStatus(207); // 207 Multi-Status
         response.setContentType("application/xml;charset=UTF-8");
-        String body = """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <multistatus xmlns="DAV:">
-                    <!-- 根目录 -->
-                    <response>
-                        <href>/webdav/</href>
-                        <propstat>
-                            <prop>
-                                <displayname>webdav</displayname>
-                                <getlastmodified>Wed, 01 Jan 2023 00:00:00 GMT</getlastmodified>
-                                <resourcetype>
-                                    <collection/>
-                                </resourcetype>
-                            </prop>
-                            <status>HTTP/1.1 200 OK</status>
-                        </propstat>
-                    </response>
-                                
-                    <!-- 文件夹 docs -->
-                    <response>
-                        <href>/webdav/docs/</href>
-                        <propstat>
-                            <prop>
-                                <displayname>docs</displayname>
-                                <getlastmodified>Wed, 01 Jan 2023 00:00:00 GMT</getlastmodified>
-                                <resourcetype>
-                                    <collection/>
-                                </resourcetype>
-                            </prop>
-                            <status>HTTP/1.1 200 OK</status>
-                        </propstat>
-                    </response>
-                                
-                    <!-- 文件 example.txt -->
-                    <response>
-                        <href>/webdav/example.txt</href>
-                        <propstat>
-                            <prop>
-                                <displayname>example.txt</displayname>
-                                <getlastmodified>Wed, 01 Jan 2023 00:00:00 GMT</getlastmodified>
-                                <getcontentlength>1024</getcontentlength> <!-- 文件大小 -->
-                                <resourcetype/> <!-- 文件没有 <collection/> 标签 -->
-                            </prop>
-                            <status>HTTP/1.1 200 OK</status>
-                        </propstat>
-                    </response>
-                </multistatus>
 
-                """;
-        response.getWriter().write(body);
+        String path = request.getRequestURI().substring("/webdav/dispatch".length());
+        if (path.isEmpty()) {
+            path = "/";
+        }
 
+        // 假设 fileService.listFiles(path) 返回一个 Map，其中 "files" 是 List<Map<String,Object>>
+        Map<String, Object> files = fileService.listFiles(path);
+
+        StringBuilder xmlBuilder = new StringBuilder();
+        xmlBuilder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+                .append("<D:multistatus xmlns:D=\"DAV:\">\n");
+
+        // 添加当前目录(如果AList会去读取根目录的属性，建议用collection)
+        xmlBuilder.append("<D:response>\n")
+                .append("<D:href>").append(escapeXml(path)).append("</D:href>\n")
+                .append("<D:propstat>\n")
+                .append("<D:prop>\n")
+                .append("<D:displayname>").append(escapeXml(getDisplayName(path))).append("</D:displayname>\n")
+                .append("<D:getlastmodified>").append(RFC1123_FORMATTER.format(Instant.now())).append("</D:getlastmodified>\n")
+                .append("<D:resourcetype><D:collection/></D:resourcetype>\n")  // 这里表示本节点是目录
+                .append("</D:prop>\n")
+                .append("<D:status>HTTP/1.1 200 OK</D:status>\n")
+                .append("</D:propstat>\n")
+                .append("</D:response>\n");
+
+        // 遍历子项
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> fileList = (List<Map<String, Object>>) files.get("files");
+        for (Map<String, Object> file : fileList) {
+            String fileName = (String) file.get("name");
+            boolean isDir = false;// (boolean) file.get("isDir"); // 需要你在后台区分文件/文件夹
+            long size = (long) file.get("size");
+            long modifiedTime = (long) file.get("modified"); // 单位: 秒或毫秒，请注意一致性
+
+            // 构造子项路径
+            String filePath = path.endsWith("/") ? path + fileName : path + "/" + fileName;
+            Instant modifiedInstant = Instant.ofEpochSecond(modifiedTime); // 如果是毫秒级就 ofEpochMilli
+            String lastModifiedStr = RFC1123_FORMATTER.format(modifiedInstant);
+
+            xmlBuilder.append("<D:response>\n")
+                    .append("<D:href>").append(escapeXml(filePath)).append("</D:href>\n")
+                    .append("<D:propstat>\n")
+                    .append("<D:prop>\n")
+                    .append("<D:displayname>").append(escapeXml(fileName)).append("</D:displayname>\n")
+                    .append("<D:getlastmodified>").append(lastModifiedStr).append("</D:getlastmodified>\n");
+
+            if (isDir) {
+                // 文件夹
+                xmlBuilder.append("<D:resourcetype><D:collection/></D:resourcetype>\n");
+            } else {
+                // 普通文件
+                xmlBuilder.append("<D:resourcetype/>\n");
+                xmlBuilder.append("<D:getcontentlength>").append(size).append("</D:getcontentlength>\n");
+                // 可选: xmlBuilder.append("<D:getcontenttype>image/png</D:getcontenttype>\n");
+            }
+
+            xmlBuilder.append("</D:prop>\n")
+                    .append("<D:status>HTTP/1.1 200 OK</D:status>\n")
+                    .append("</D:propstat>\n")
+                    .append("</D:response>\n");
+        }
+
+        xmlBuilder.append("</D:multistatus>");
+        response.getWriter().write(xmlBuilder.toString());
+    }
+
+    private String getDisplayName(String path) {
+        return path.substring(path.lastIndexOf('/'));
     }
 }
