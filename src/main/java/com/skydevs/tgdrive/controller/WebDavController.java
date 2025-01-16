@@ -50,11 +50,7 @@ public class WebDavController {
      */
     @GetMapping("/**")
     public ResponseEntity<StreamingResponseBody> handleGet(HttpServletRequest request) {
-        return fileService.downloadFromTelegram(request.getRequestURI().substring("/webdav".length()))
-                .map(stream -> ResponseEntity.ok()
-                        .header("Content-Disposition", "attachment")
-                        .body(stream))
-                .orElse(ResponseEntity.notFound().build());
+        return fileService.downloadFromTelegram(request.getRequestURI().substring("/webdav".length()));
     }
 
     /**
@@ -174,7 +170,7 @@ public class WebDavController {
         List<Map<String, Object>> fileList = (List<Map<String, Object>>) files.get("files");
         for (Map<String, Object> file : fileList) {
             String fileName = (String) file.get("name");
-            boolean isDir = false;// (boolean) file.get("isDir"); // 需要你在后台区分文件/文件夹
+            boolean isDir = (boolean) file.get("isDir"); // 需要你在后台区分文件/文件夹
             long size = (long) file.get("size");
             long modifiedTime = (long) file.get("modified"); // 单位: 秒或毫秒，请注意一致性
 

@@ -36,7 +36,7 @@ public interface FileMapper {
     @Select("SELECT * FROM files WHERE webdav_path = #{path}")
     FileInfo getFileByWebdavPath(String path);
 
-    @Select("SELECT * FROM files WHERE webdav_path LIKE #{path} || '%'")
+    @Select("SELECT * FROM files WHERE webdav_path LIKE #{path} || '%' ORDER BY id DESC")
     List<FileInfo> getFilesByPathPrefix(String path);
 
     @Select("DELETE FROM files WHERE file_id = #{fileId}")

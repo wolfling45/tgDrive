@@ -2,11 +2,11 @@ package com.skydevs.tgdrive.service;
 
 import com.skydevs.tgdrive.result.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
 import java.util.Map;
-import java.util.Optional;
 
 public interface FileService {
     /**
@@ -33,11 +33,11 @@ public interface FileService {
     String uploadToTelegram(InputStream inputStream, HttpServletRequest request);
 
     /**
-     * 从Telegram下载文件
+     * WebDAV下载文件
      * @param path 文件路径
      * @return 文件流
      */
-    Optional<StreamingResponseBody> downloadFromTelegram(String path);
+    ResponseEntity<StreamingResponseBody> downloadFromTelegram(String path);
 
     /**
      * 从Telegram删除文件

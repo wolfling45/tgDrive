@@ -76,6 +76,15 @@ public interface BotService{
     String uploadFile(InputStream inputStream, String path);
 
     /**
+     * WebDAV上传
+     * @param inputStream
+     * @param path
+     * @param request WebDAV请求
+     * @return fileID
+     */
+    String uploadFile(InputStream inputStream, String path, HttpServletRequest request);
+
+    /**
      * 从Telegram下载文件
      * @param fileId 文件ID
      * @return 文件输入流

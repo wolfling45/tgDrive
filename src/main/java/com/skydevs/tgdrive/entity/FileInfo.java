@@ -1,9 +1,6 @@
 package com.skydevs.tgdrive.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @AllArgsConstructor
@@ -22,5 +19,6 @@ public class FileInfo {
     // WebDAV文件路径
     private String webdavPath;
 
+    private boolean isDir;
 }
 

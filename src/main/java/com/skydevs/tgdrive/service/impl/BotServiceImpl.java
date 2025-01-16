@@ -21,6 +21,7 @@ import com.skydevs.tgdrive.service.ConfigService;
 import com.skydevs.tgdrive.utils.UserFriendly;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -103,10 +104,22 @@ public class BotServiceImpl implements BotService {
 
         try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream)) {
             byte[] buffer = new byte[MAX_FILE_SIZE]; // 10MB 缓冲区
-            int byteRead;
             int partIndex = 0;
 
-            while ((byteRead = bufferedInputStream.read(buffer)) > 0) {
+            while (true) {
+                // 用offset追踪buffer读了多少字节
+                int offset = 0;
+                while(offset < MAX_FILE_SIZE) {
+                    int byteRead = bufferedInputStream.read(buffer, offset, MAX_FILE_SIZE - offset);
+                    if (byteRead == -1) {
+                        break;
+                    }
+                    offset += byteRead;
+                }
+
+                if (offset == 0) {
+                    break;
+                }
                 semaphore.acquire(); // 获取许可，若没有可用许可则阻塞
 
                 // 当前块的文件名
@@ -114,7 +127,7 @@ public class BotServiceImpl implements BotService {
                 partIndex++;
 
                 // 取当前分块数据
-                byte[] chunkData = Arrays.copyOf(buffer, byteRead);
+                byte[] chunkData = Arrays.copyOf(buffer, offset);
 
                 // 提交上传任务，使用CompletableFuture
                 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
@@ -388,26 +401,51 @@ public class BotServiceImpl implements BotService {
         return botToken;
     }
 
+    /**
+     * 上传文件
+     * @param inputStream 文件输入流
+     * @param path 文件路径
+     * @return
+     */
     @Override
     public String uploadFile(InputStream inputStream, String path) {
         try {
             String filename = path.substring(path.lastIndexOf('/') + 1);
             long size = inputStream.available();
-            
-            if (size > MAX_FILE_SIZE) {
-                List<String> fileIds = sendFileStreamInChunks(inputStream, filename);
-                String fileID = createRecordFile(filename, size, fileIds);
-                return fileID;
-            } else {
-                String uploadFilename = filename;
-                if (filename.endsWith(".gif")) {
-                    uploadFilename = filename.substring(0, filename.lastIndexOf(".gif"));
-                }
-                return uploadOneFile(inputStream, uploadFilename);
-            }
+
+            return getUploadedFileID(inputStream, filename, size);
         } catch (IOException e) {
             log.error("文件上传失败", e);
             throw new RuntimeException("文件上传失败", e);
+        }
+    }
+
+
+    @Override
+    public String uploadFile(InputStream inputStream, String path, HttpServletRequest request) {
+        try {
+            String filename = path.substring(path.lastIndexOf('/') + 1);
+            long size = request.getContentLengthLong();
+
+            return getUploadedFileID(inputStream, filename, size);
+        } catch (IOException e) {
+            log.error("文件上传失败", e);
+            throw new RuntimeException("文件上传失败", e);
+        }
+    }
+
+    @Nullable
+    private String getUploadedFileID(InputStream inputStream, String filename, long size) throws IOException {
+        if (size > MAX_FILE_SIZE) {
+            List<String> fileIds = sendFileStreamInChunks(inputStream, filename);
+            String fileID = createRecordFile(filename, size, fileIds);
+            return fileID;
+        } else {
+            String uploadFilename = filename;
+            if (filename.endsWith(".gif")) {
+                uploadFilename = filename.substring(0, filename.lastIndexOf(".gif"));
+            }
+            return uploadOneFile(inputStream, uploadFilename);
         }
     }
 

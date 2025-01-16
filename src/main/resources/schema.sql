@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS files (
     size TEXT NOT NULL,
     full_size TEXT,
     file_id TEXT NOT NULL,
-    webdav_path TEXT
+    webdav_path TEXT,
+    is_dir BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS configs (

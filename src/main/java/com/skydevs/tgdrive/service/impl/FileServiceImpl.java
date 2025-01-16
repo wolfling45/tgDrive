@@ -7,12 +7,14 @@ import com.skydevs.tgdrive.exception.FailedToGetSizeException;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.result.PageResult;
 import com.skydevs.tgdrive.service.BotService;
+import com.skydevs.tgdrive.service.DownloadService;
 import com.skydevs.tgdrive.service.FileService;
 import com.skydevs.tgdrive.utils.UserFriendly;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -29,6 +31,8 @@ public class FileServiceImpl implements FileService {
     private FileMapper fileMapper;
     @Autowired
     private BotService botService;
+    @Autowired
+    private DownloadService downloadService;
 
     /**
      * 获取文件分页
@@ -70,7 +74,7 @@ public class FileServiceImpl implements FileService {
                 log.error("无法获取文件大小");
                 throw new FailedToGetSizeException();
             }
-            String fileId = botService.uploadFile(inputStream, path);
+            String fileId = botService.uploadFile(inputStream, path, request);
             // 从路径中提取文件名
             String fileName = path.substring(path.lastIndexOf('/') + 1);
             FileInfo fileInfo = FileInfo.builder()
@@ -89,26 +93,22 @@ public class FileServiceImpl implements FileService {
         }
     }
 
+    /**
+     * WebDAV下载
+     * @param path 文件路径
+     * @return
+     */
     @Override
-    public Optional<StreamingResponseBody> downloadFromTelegram(String path) {
+    public ResponseEntity<StreamingResponseBody> downloadFromTelegram(String path) {
         try {
             FileInfo fileInfo = fileMapper.getFileByWebdavPath(path);
             if (fileInfo == null) {
-                return Optional.empty();
+                return ResponseEntity.notFound().build();
             }
-            InputStream inputStream = botService.downloadFile(fileInfo.getFileId());
-            StreamingResponseBody responseBody = outputStream -> {
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-                inputStream.close();
-            };
-            return Optional.of(responseBody);
+            return downloadService.downloadFile(fileInfo.getFileId());
         } catch (Exception e) {
             log.error("文件下载失败", e);
-            return Optional.empty();
+            return ResponseEntity.status(500).build();
         }
     }
 
@@ -135,7 +135,8 @@ public class FileServiceImpl implements FileService {
                 .map(file -> Map.of(
                     "name", file.getFileName(),
                     "size", file.getFullSize(),
-                    "modified", file.getUploadTime()
+                    "modified", file.getUploadTime(),
+                    "isDir", file.isDir()
                 ))
                 .collect(Collectors.toList()));
             return result;
