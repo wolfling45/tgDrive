@@ -95,6 +95,7 @@ public class WebDavController {
 
         if (realMethod == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing X-HTTP-Method-Override");
+            return;
         }
         switch (realMethod.toUpperCase()) {
             case "PROPFIND":

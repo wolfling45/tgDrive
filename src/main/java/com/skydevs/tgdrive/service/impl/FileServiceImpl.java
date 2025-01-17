@@ -69,6 +69,10 @@ public class FileServiceImpl implements FileService {
     public String uploadToTelegram(InputStream inputStream, HttpServletRequest request) {
         try {
             String path = request.getRequestURI().substring("/webdav".length());
+            List<FileInfo> fileInfos = fileMapper.getFilesByPathPrefix(path);
+            for (FileInfo fileInfo : fileInfos) {
+                fileMapper.deleteFile(fileInfo.getFileId());
+            }
             long size = request.getContentLengthLong();
             if (size < 0) {
                 log.error("无法获取文件大小");
