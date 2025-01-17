@@ -30,20 +30,20 @@ public interface FileService {
      * @param request
      * @return 文件ID
      */
-    String uploadToTelegram(InputStream inputStream, HttpServletRequest request);
+    String uploadByWebDav(InputStream inputStream, HttpServletRequest request);
 
     /**
      * WebDAV下载文件
      * @param path 文件路径
      * @return 文件流
      */
-    ResponseEntity<StreamingResponseBody> downloadFromTelegram(String path);
+    ResponseEntity<StreamingResponseBody> downloadByWebDav(String path);
 
     /**
      * 从Telegram删除文件
      * @param path 文件路径
      */
-    void deleteFromTelegram(String path);
+    void deleteByWebDav(String path);
 
     /**
      * 获取文件列表

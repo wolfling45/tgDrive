@@ -66,7 +66,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public String uploadToTelegram(InputStream inputStream, HttpServletRequest request) {
+    public String uploadByWebDav(InputStream inputStream, HttpServletRequest request) {
         try {
             String path = request.getRequestURI().substring("/webdav".length());
             List<FileInfo> fileInfos = fileMapper.getFilesByPathPrefix(path);
@@ -103,7 +103,7 @@ public class FileServiceImpl implements FileService {
      * @return
      */
     @Override
-    public ResponseEntity<StreamingResponseBody> downloadFromTelegram(String path) {
+    public ResponseEntity<StreamingResponseBody> downloadByWebDav(String path) {
         try {
             FileInfo fileInfo = fileMapper.getFileByWebdavPath(path);
             if (fileInfo == null) {
@@ -117,7 +117,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void deleteFromTelegram(String path) {
+    public void deleteByWebDav(String path) {
         try {
             FileInfo fileInfo = fileMapper.getFileByWebdavPath(path);
             if (fileInfo != null) {
@@ -136,11 +136,12 @@ public class FileServiceImpl implements FileService {
             List<FileInfo> files = fileMapper.getFilesByPathPrefix(path);
             Map<String, Object> result = new HashMap<>();
             result.put("files", files.stream()
+                    .filter(file -> !file.getWebdavPath().equals(path))
                 .map(file -> Map.of(
                     "name", file.getFileName(),
                     "size", file.getFullSize(),
                     "modified", file.getUploadTime(),
-                    "isDir", file.isDir()
+                    "dir", file.isDir()
                 ))
                 .collect(Collectors.toList()));
             return result;

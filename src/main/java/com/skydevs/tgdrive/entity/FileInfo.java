@@ -19,6 +19,6 @@ public class FileInfo {
     // WebDAV文件路径
     private String webdavPath;
 
-    private boolean isDir;
+    private boolean dir;
 }
 

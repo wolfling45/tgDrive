@@ -15,7 +15,7 @@ public interface FileMapper {
      * 插入已上传文件
      * @param fileInfo
      */
-    @Insert("INSERT INTO files (file_name, download_url, upload_time, file_id, size, full_size, webdav_path) VALUES (#{fileName}, #{downloadUrl}, #{uploadTime}, #{fileId}, #{size}, #{fullSize}, #{webdavPath})")
+    @Insert("INSERT INTO files (file_name, download_url, upload_time, file_id, size, full_size, webdav_path, dir) VALUES (#{fileName}, #{downloadUrl}, #{uploadTime}, #{fileId}, #{size}, #{fullSize}, #{webdavPath}, #{dir})")
     void insertFile(FileInfo fileInfo);
 
     /**
