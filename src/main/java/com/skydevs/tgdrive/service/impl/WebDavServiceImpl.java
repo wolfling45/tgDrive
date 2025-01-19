@@ -4,11 +4,13 @@ import com.skydevs.tgdrive.entity.FileInfo;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.FileService;
 import com.skydevs.tgdrive.service.WebDacService;
+import com.skydevs.tgdrive.utils.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -49,7 +51,7 @@ public class WebDavServiceImpl implements WebDacService {
                 handleMkCol(request, response, realURI);
                 break;
             case "MOVE":
-                handleMove(request, response);
+                handleMove(request, response, realURI);
                 break;
             case "COPY":
                 handleCopy(request, response);
@@ -60,10 +62,47 @@ public class WebDavServiceImpl implements WebDacService {
         }
     }
 
-    private void handleMove(HttpServletRequest request, HttpServletResponse response) {
-
+    /**
+     * WebDAV文件移动
+     * @param request
+     * @param response
+     * @param realURI
+     */
+    @Transactional
+    public void handleMove(HttpServletRequest request, HttpServletResponse response, String realURI) {
+        String target = request.getHeader("Destination");
+        String overwrite = request.getHeader("Overwrite");
+        FileInfo sourceFile = fileMapper.getFileByWebdavPath(realURI);
+        if (target == null || realURI == null || sourceFile == null) {
+            response.setStatus(400);
+            return;
+        }
+        target = getTargetPath(request, target);
+        FileInfo targetFile = fileMapper.getFileByWebdavPath(target);
+        if (targetFile != null && overwrite.equalsIgnoreCase("F")) {
+            response.setStatus(409);
+            return;
+        } else if (overwrite.equalsIgnoreCase("T") && targetFile != null) {
+            // 允许覆盖且目标路径有该文件名，删除原文件路径，更新目标文件路径的属性
+            fileMapper.deleteFileByWebDav(realURI);
+            fileMapper.updateFileAttributeByWebDav(sourceFile, target);
+            response.setStatus(204);
+            log.info("{} 移动到 {}", realURI, target);
+        } else {
+            // 目标路径没有该文件名
+            fileMapper.deleteFileByWebDav(realURI);
+            fileMapper.moveFile(sourceFile, target);
+            response.setStatus(204);
+            log.info("{} 移动到 {}", realURI, target);
+        }
     }
 
+    /**
+     * 处理新建文件夹
+     * @param request
+     * @param response
+     * @param realURI
+     */
     private void handleMkCol(HttpServletRequest request, HttpServletResponse response, String realURI) {
         FileInfo fileInfo = fileMapper.getFileByWebdavPath(realURI);
         if (fileInfo != null) {
@@ -175,5 +214,10 @@ public class WebDavServiceImpl implements WebDacService {
         path = path.substring(0, path.lastIndexOf('/'));
         path = path.substring(path.lastIndexOf('/') + 1);
         return path;
+    }
+
+    private String getTargetPath(HttpServletRequest request, String target) {
+        String prefix = StringUtil.getPrefix(request);
+        return target.substring((prefix + "/webdav").length());
     }
 }

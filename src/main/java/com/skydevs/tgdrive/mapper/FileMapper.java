@@ -2,9 +2,7 @@ package com.skydevs.tgdrive.mapper;
 
 import com.github.pagehelper.Page;
 import com.skydevs.tgdrive.entity.FileInfo;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -25,7 +23,7 @@ public interface FileMapper {
     @Select("SELECT * FROM files order by upload_time desc ")
     Page<FileInfo> getAllFiles();
 
-    @Select("SELECT file_name FROM files where file_id = #{fileId}")
+    @Select("SELECT file_name FROM files where file_id = #{fileId} AND webdav_path != 'deleted'")
     String getFileNameByFileId(String fileId);
 
     @Select("SELECT full_size FROM files where file_id = #{fileId}")
@@ -41,4 +39,13 @@ public interface FileMapper {
 
     @Select("DELETE FROM files WHERE file_id = #{fileId}")
     void deleteFile(String fileId);
+
+    @Update("UPDATE files SET webdav_path = 'deleted' WHERE webdav_path = #{path}")
+    void deleteFileByWebDav(String path);
+
+    @Update("UPDATE files SET download_url = #{file.downloadUrl}, upload_time = #{file.uploadTime}, size = #{file.size}, full_size = #{file.fullSize}, file_id = #{file.fileId} WHERE webdav_path = #{target}")
+    void updateFileAttributeByWebDav(@Param("file") FileInfo file, @Param("target") String target);
+
+    @Insert("INSERT INTO files (file_name, download_url, upload_time, file_id, size, full_size, webdav_path, dir) VALUES (#{file.fileName}, #{file.downloadUrl}, #{file.uploadTime}, #{file.fileId}, #{file.size}, #{file.fullSize}, #{target}, #{file.dir})")
+    void moveFile(@Param("file") FileInfo sourceFile, @Param("target") String target);
 }
