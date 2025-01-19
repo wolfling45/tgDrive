@@ -1,8 +1,5 @@
 package com.skydevs.tgdrive.utils;
 
-import org.springframework.stereotype.Component;
-
-@Component
 public class UserFriendly {
     public static String humanReadableFileSize(long size) {
         if (size <= 0) return "0 B";

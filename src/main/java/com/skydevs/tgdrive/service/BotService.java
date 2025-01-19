@@ -10,12 +10,6 @@ import java.io.InputStream;
  * 机器人服务类，用于初始化机器人和运行机器人相关服务
  */
 public interface BotService{
-    /**
-     * 获取前缀
-     * @param request
-     * @return
-     */
-    String getPrefix(HttpServletRequest request);
 
     /**
      * 获取bot token

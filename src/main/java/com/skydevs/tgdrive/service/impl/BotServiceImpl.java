@@ -18,6 +18,7 @@ import com.skydevs.tgdrive.exception.*;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.ConfigService;
+import com.skydevs.tgdrive.utils.StringUtil;
 import com.skydevs.tgdrive.utils.UserFriendly;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -44,8 +45,6 @@ public class BotServiceImpl implements BotService {
 
     @Autowired
     private ConfigService configService;
-    @Autowired
-    private UserFriendly userFriendly;
     @Autowired
     private FileMapper fileMapper;
     private String botToken;
@@ -247,7 +246,7 @@ public class BotServiceImpl implements BotService {
      */
     private String uploadFile(MultipartFile multipartFile, HttpServletRequest request) {
         try {
-            String prefix = getPrefix(request);
+            String prefix = StringUtil.getPrefix(request);
             InputStream inputStream = multipartFile.getInputStream();
             String filename = multipartFile.getOriginalFilename();
             long size = multipartFile.getSize();
@@ -256,7 +255,7 @@ public class BotServiceImpl implements BotService {
                 String fileID = createRecordFile(filename, size, fileIds);
                 FileInfo fileInfo = FileInfo.builder()
                         .fileId(fileID)
-                        .size(userFriendly.humanReadableFileSize(size))
+                        .size(UserFriendly.humanReadableFileSize(size))
                         .fullSize(size)
                         .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
                         .downloadUrl(prefix + "/d/" + fileID)
@@ -273,7 +272,7 @@ public class BotServiceImpl implements BotService {
                 String fileID = uploadOneFile(inputStream, uploadFilename);
                 FileInfo fileInfo = FileInfo.builder()
                         .fileId(fileID)
-                        .size(userFriendly.humanReadableFileSize(size))
+                        .size(UserFriendly.humanReadableFileSize(size))
                         .fullSize(size)
                         .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
                         .downloadUrl(prefix + "/d/" + fileID)
@@ -470,23 +469,5 @@ public class BotServiceImpl implements BotService {
             log.error("文件删除失败", e);
             throw new RuntimeException("文件删除失败", e);
         }
-    }
-
-    /**
-     * 获取前缀
-     *
-     * @param request
-     * @return
-     */
-    @Override
-    public String getPrefix(HttpServletRequest request) {
-        String protocol = request.getHeader("X-Forwarded-Proto") != null ? request.getHeader("X-Forwarded-Proto") : request.getScheme(); // 先代理请求头中获取协议
-        String host = request.getServerName(); // 获取主机名 localhost 或实际域名
-        int port = request.getHeader("X-Forwarded-Port") != null ? Integer.parseInt(request.getHeader("X-Forwarded-Port")) : request.getServerPort(); // 先从代理请求头中获取端口号 8080 或其他
-        // 如果是默认端口，则省略端口号
-        if ((protocol.equalsIgnoreCase("http") && port == 80) || (protocol.equalsIgnoreCase("https") && port == 443)) {
-            return protocol + "://" + host;
-        }
-        return protocol + "://" + host + ":" + port;
     }
 }

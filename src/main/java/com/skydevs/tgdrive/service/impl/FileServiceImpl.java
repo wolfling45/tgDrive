@@ -9,6 +9,7 @@ import com.skydevs.tgdrive.result.PageResult;
 import com.skydevs.tgdrive.service.BotService;
 import com.skydevs.tgdrive.service.DownloadService;
 import com.skydevs.tgdrive.service.FileService;
+import com.skydevs.tgdrive.utils.StringUtil;
 import com.skydevs.tgdrive.utils.UserFriendly;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +62,7 @@ public class FileServiceImpl implements FileService {
      */
     @Override
     public void updateUrl(HttpServletRequest request) {
-        String prefix = botService.getPrefix(request);
+        String prefix = StringUtil.getPrefix(request);
         fileMapper.updateUrl(prefix);
     }
 
@@ -87,7 +88,7 @@ public class FileServiceImpl implements FileService {
                     .fullSize(size)
                     .size(UserFriendly.humanReadableFileSize(size))
                     .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
-                    .downloadUrl(botService.getPrefix(request) + "/d/" + fileId)
+                    .downloadUrl(StringUtil.getPrefix(request) + "/d/" + fileId)
                     .webdavPath(path).build();
             fileMapper.insertFile(fileInfo);
             return fileId;
