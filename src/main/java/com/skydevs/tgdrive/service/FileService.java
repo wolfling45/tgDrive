@@ -1,12 +1,13 @@
 package com.skydevs.tgdrive.service;
 
+import com.skydevs.tgdrive.entity.FileInfo;
 import com.skydevs.tgdrive.result.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
-import java.util.Map;
+import java.util.List;
 
 public interface FileService {
     /**
@@ -47,8 +48,9 @@ public interface FileService {
 
     /**
      * 获取文件列表
+     *
      * @param path 路径
      * @return 文件列表
      */
-    Map<String, Object> listFiles(String path);
+    List<FileInfo> listFiles(String path);
 }

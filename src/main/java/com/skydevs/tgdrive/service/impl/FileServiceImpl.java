@@ -22,8 +22,8 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -69,7 +69,7 @@ public class FileServiceImpl implements FileService {
     @Override
     public String uploadByWebDav(InputStream inputStream, HttpServletRequest request) {
         try {
-            String path = request.getRequestURI().substring("/webdav".length());
+            String path = StringUtil.getPath(request.getRequestURI());
             List<FileInfo> fileInfos = fileMapper.getFilesByPathPrefix(path);
             for (FileInfo fileInfo : fileInfos) {
                 fileMapper.deleteFile(fileInfo.getFileId());
@@ -120,35 +120,40 @@ public class FileServiceImpl implements FileService {
     @Override
     public void deleteByWebDav(String path) {
         try {
-            FileInfo fileInfo = fileMapper.getFileByWebdavPath(path);
-            if (fileInfo != null) {
-                botService.deleteFile(fileInfo.getFileId());
-                fileMapper.deleteFile(fileInfo.getFileId());
-            }
+            fileMapper.deleteFileByWebDav(path);
         } catch (Exception e) {
             log.error("文件删除失败", e);
             throw new RuntimeException("文件删除失败", e);
         }
     }
 
+    /**
+     * 列出WebDAV文件
+     *
+     * @param path 路径
+     * @return
+     */
     @Override
-    public Map<String, Object> listFiles(String path) {
-        try {
-            List<FileInfo> files = fileMapper.getFilesByPathPrefix(path);
-            Map<String, Object> result = new HashMap<>();
-            result.put("files", files.stream()
-                    .filter(file -> !file.getWebdavPath().equals(path))
-                .map(file -> Map.of(
-                    "name", file.getFileName(),
-                    "size", file.getFullSize(),
-                    "modified", file.getUploadTime(),
-                    "dir", file.isDir()
-                ))
-                .collect(Collectors.toList()));
-            return result;
-        } catch (Exception e) {
-            log.error("获取文件列表失败", e);
-            throw new RuntimeException("获取文件列表失败", e);
+    public List<FileInfo> listFiles(String path) {
+        List<FileInfo> files = fileMapper.getFilesByPathPrefix(path);
+        if (files == null) {
+            log.error("文件查询失败");
+            return null;
         }
+        List<FileInfo> res = new ArrayList<>();
+        for (FileInfo file : files) {
+            String str = file.getWebdavPath().substring(path.length());
+            if (str.indexOf('/') != -1 && !file.isDir()) {
+                continue;
+            }
+            if (str.indexOf('/') != -1 && str.substring(str.indexOf('/')).length() > 1) {
+                continue;
+            }
+            if (file.getWebdavPath().equals(path)) {
+                continue;
+            }
+            res.add(file);
+        }
+        return res;
     }
 }
