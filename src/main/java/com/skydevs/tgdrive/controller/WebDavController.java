@@ -3,6 +3,7 @@ package com.skydevs.tgdrive.controller;
 import com.skydevs.tgdrive.result.Result;
 import com.skydevs.tgdrive.service.FileService;
 import com.skydevs.tgdrive.service.WebDacService;
+import com.skydevs.tgdrive.utils.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -51,13 +52,14 @@ public class WebDavController {
 
     /**
      * 删除文件
-     * @param path
+     * @param request
+     * @param response
      * @return
      */
-    @DeleteMapping("/{path:.+}")
-    public Result<Void> handleDelete(@PathVariable String path) {
+    @DeleteMapping("/**")
+    public Result<Void> handleDelete(HttpServletRequest request, HttpServletResponse response) {
         try {
-            fileService.deleteByWebDav(path);
+            fileService.deleteByWebDav(StringUtil.getPath(request.getRequestURI()));
             return Result.success();
         } catch (Exception e) {
             log.error("文件删除失败", e);

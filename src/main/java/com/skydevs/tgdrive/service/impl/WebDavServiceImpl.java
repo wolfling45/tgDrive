@@ -19,12 +19,12 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 
 import static org.apache.catalina.manager.JspHelper.escapeXml;
 
 @Service
 @Slf4j
+@Transactional
 public class WebDavServiceImpl implements WebDacService {
 
     @Autowired
@@ -68,8 +68,7 @@ public class WebDavServiceImpl implements WebDacService {
      * @param response
      * @param realURI
      */
-    @Transactional
-    public void handleMove(HttpServletRequest request, HttpServletResponse response, String realURI) {
+    private void handleMove(HttpServletRequest request, HttpServletResponse response, String realURI) {
         String target = request.getHeader("Destination");
         String overwrite = request.getHeader("Overwrite");
         FileInfo sourceFile = fileMapper.getFileByWebdavPath(realURI);
@@ -77,25 +76,56 @@ public class WebDavServiceImpl implements WebDacService {
             response.setStatus(400);
             return;
         }
-        target = getTargetPath(request, target);
+        target = getTargetPath(request, target, sourceFile.isDir());
         FileInfo targetFile = fileMapper.getFileByWebdavPath(target);
+        List<FileInfo> subFiles = getSubFiles(realURI);
+        sourceFile.setFileName(StringUtil.getDisplayName(target, sourceFile.isDir()));
         if (targetFile != null && overwrite.equalsIgnoreCase("F")) {
             response.setStatus(409);
-            return;
         } else if (overwrite.equalsIgnoreCase("T") && targetFile != null) {
             // 允许覆盖且目标路径有该文件名，删除原文件路径，更新目标文件路径的属性
             fileMapper.deleteFileByWebDav(realURI);
             fileMapper.updateFileAttributeByWebDav(sourceFile, target);
+            handleMoveSubFiles(subFiles, target, realURI);
             response.setStatus(204);
             log.info("{} 移动到 {}", realURI, target);
         } else {
             // 目标路径没有该文件名
             fileMapper.deleteFileByWebDav(realURI);
             fileMapper.moveFile(sourceFile, target);
+            handleMoveSubFiles(subFiles, target, realURI);
             response.setStatus(204);
             log.info("{} 移动到 {}", realURI, target);
         }
     }
+
+    private List<FileInfo> getSubFiles(String realURI) {
+        List<FileInfo> files =  fileMapper.getFilesByPathPrefix(realURI);
+        files.removeIf(file -> file.getWebdavPath().equals(realURI));
+        return files;
+    }
+
+    /**
+     * 移动子文件
+     * @param subFiles
+     * @param target
+     * @param realURI
+     */
+    private void handleMoveSubFiles(List<FileInfo> subFiles, String target, String realURI) {
+        for (FileInfo file : subFiles) {
+            String targetPath = target;
+            String sourcePath = file.getWebdavPath();
+            targetPath = targetPath + sourcePath.substring(realURI.length());
+            FileInfo targetFile = fileMapper.getFileByWebdavPath(targetPath);
+            fileMapper.deleteFileByWebDav(sourcePath);
+            if (targetFile != null) {
+                fileMapper.updateFileAttributeByWebDav(file, targetPath);
+            } else {
+                fileMapper.moveFile(file, targetPath);
+            }
+        }
+    }
+
 
     /**
      * 处理新建文件夹
@@ -110,7 +140,7 @@ public class WebDavServiceImpl implements WebDacService {
             return;
         }
         fileInfo = FileInfo.builder().fileId("dir")
-                .fileName(getDisplayDirName(realURI))
+                .fileName(StringUtil.getDisplayName(realURI, true))
                 .downloadUrl("dir")
                 .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
                 .size("0")
@@ -123,6 +153,11 @@ public class WebDavServiceImpl implements WebDacService {
         response.setStatus(201);
     }
 
+    /**
+     * 处理文件复制
+     * @param request
+     * @param response
+     */
     private void handleCopy(HttpServletRequest request, HttpServletResponse response) {
 
     }
@@ -146,7 +181,7 @@ public class WebDavServiceImpl implements WebDacService {
         }
 
         // 假设 fileService.listFiles(path) 返回一个 Map，其中 "files" 是 List<Map<String,Object>>
-        Map<String, Object> files = fileService.listFiles(path);
+        List<FileInfo> files = fileService.listFiles(path);
 
         StringBuilder xmlBuilder = new StringBuilder();
         xmlBuilder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
@@ -166,13 +201,11 @@ public class WebDavServiceImpl implements WebDacService {
                 .append("</D:response>\n");
 
         // 遍历子项
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> fileList = (List<Map<String, Object>>) files.get("files");
-        for (Map<String, Object> file : fileList) {
-            String fileName = (String) file.get("name");
-            boolean isDir = (boolean) file.get("dir"); // 需要你在后台区分文件/文件夹
-            long size = (long) file.get("size");
-            long modifiedTime = (long) file.get("modified"); // 单位: 秒或毫秒，请注意一致性
+        for (FileInfo file : files) {
+            String fileName = file.getFileName();
+            boolean isDir = file.isDir();// 需要你在后台区分文件/文件夹
+            long size = file.getFullSize();
+            long modifiedTime = file.getUploadTime();// 单位: 秒或毫秒，请注意一致性
 
             // 构造子项路径
             String filePath = path.endsWith("/") ? path + fileName : path + "/" + fileName;
@@ -210,14 +243,12 @@ public class WebDavServiceImpl implements WebDacService {
         return path.substring(path.lastIndexOf('/'));
     }
 
-    private String getDisplayDirName(String path) {
-        path = path.substring(0, path.lastIndexOf('/'));
-        path = path.substring(path.lastIndexOf('/') + 1);
-        return path;
-    }
-
-    private String getTargetPath(HttpServletRequest request, String target) {
+    private String getTargetPath(HttpServletRequest request, String target, boolean dir) {
         String prefix = StringUtil.getPrefix(request);
-        return target.substring((prefix + "/webdav").length());
+        target =  target.substring((prefix + "/webdav").length());
+        if (dir) {
+            target = target + "/";
+        }
+        return target;
     }
 }

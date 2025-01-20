@@ -40,7 +40,7 @@ public interface FileMapper {
     @Select("DELETE FROM files WHERE file_id = #{fileId}")
     void deleteFile(String fileId);
 
-    @Update("UPDATE files SET webdav_path = 'deleted' WHERE webdav_path = #{path}")
+    @Delete("DELETE FROM files WHERE webdav_path = #{path}")
     void deleteFileByWebDav(String path);
 
     @Update("UPDATE files SET download_url = #{file.downloadUrl}, upload_time = #{file.uploadTime}, size = #{file.size}, full_size = #{file.fullSize}, file_id = #{file.fileId} WHERE webdav_path = #{target}")

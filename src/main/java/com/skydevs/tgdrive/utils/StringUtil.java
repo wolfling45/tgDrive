@@ -19,4 +19,19 @@ public class StringUtil {
         }
         return protocol + "://" + host + ":" + port;
     }
+
+    public static String getPath(String path) {
+        return path.substring("/webdav".length());
+    }
+
+    public static String getDisplayName(String path, boolean dir) {
+        if (dir) {
+            path = path.substring(0, path.lastIndexOf('/'));
+            path = path.substring(path.lastIndexOf('/') + 1);
+            return path;
+        } else {
+            return path.substring(path.lastIndexOf('/'));
+        }
+    }
+
 }
