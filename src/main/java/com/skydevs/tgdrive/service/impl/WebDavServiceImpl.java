@@ -54,7 +54,7 @@ public class WebDavServiceImpl implements WebDacService {
                 handleMove(request, response, realURI);
                 break;
             case "COPY":
-                handleCopy(request, response);
+                handleCopy(request, response, realURI);
                 break;
             default:
                 response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED, "Unsupported WebDAV method");
@@ -163,8 +163,52 @@ public class WebDavServiceImpl implements WebDacService {
      * @param request
      * @param response
      */
-    private void handleCopy(HttpServletRequest request, HttpServletResponse response) {
+    private void handleCopy(HttpServletRequest request, HttpServletResponse response, String realURI) {
+        String target = request.getHeader("Destination");
+        String overwrite = request.getHeader("Overwrite");
+        FileInfo sourceFile = fileMapper.getFileByWebdavPath(realURI);
+        if (target == null || realURI == null || sourceFile == null) {
+            response.setStatus(400);
+            return;
+        }
+        target = getTargetPath(request, target, sourceFile.isDir());
+        FileInfo targetFile = fileMapper.getFileByWebdavPath(target);
+        List<FileInfo> subFiles = getSubFiles(realURI);
+        sourceFile.setFileName(StringUtil.getDisplayName(target, sourceFile.isDir()));
+        if (targetFile != null && overwrite.equalsIgnoreCase("F")) {
+            response.setStatus(409);
+        } else if (overwrite.equalsIgnoreCase("T") && targetFile != null) {
+            // 允许覆盖且目标路径有该文件名，更新目标文件路径的属性
+            fileMapper.updateFileAttributeByWebDav(sourceFile, target);
+            handleCopySubFiles(subFiles, target, realURI);
+            response.setStatus(204);
+            log.info("{} 移动到 {}", realURI, target);
+        } else {
+            // 目标路径没有该文件名
+            fileMapper.moveFile(sourceFile, target);
+            handleCopySubFiles(subFiles, target, realURI);
+            response.setStatus(204);
+            log.info("{} 移动到 {}", realURI, target);
+        }
+    }
 
+    private void handleCopySubFiles(List<FileInfo> subFiles, String target, String realURI) {
+        if (subFiles == null) {
+            return;
+        }
+        log.info("开始复制子文件");
+        for (FileInfo file : subFiles) {
+            String targetPath = target;
+            String sourcePath = file.getWebdavPath();
+            targetPath = targetPath + sourcePath.substring(realURI.length());
+            FileInfo targetFile = fileMapper.getFileByWebdavPath(targetPath);
+            if (targetFile != null) {
+                fileMapper.updateFileAttributeByWebDav(file, targetPath);
+            } else {
+                fileMapper.moveFile(file, targetPath);
+            }
+        }
+        log.info("子文件复制完成");
     }
 
     /**
