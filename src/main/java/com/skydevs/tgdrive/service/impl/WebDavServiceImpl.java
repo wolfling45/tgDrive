@@ -112,6 +112,10 @@ public class WebDavServiceImpl implements WebDacService {
      * @param realURI
      */
     private void handleMoveSubFiles(List<FileInfo> subFiles, String target, String realURI) {
+        if (subFiles == null) {
+            return;
+        }
+        log.info("开始移动子文件");
         for (FileInfo file : subFiles) {
             String targetPath = target;
             String sourcePath = file.getWebdavPath();
@@ -124,6 +128,7 @@ public class WebDavServiceImpl implements WebDacService {
                 fileMapper.moveFile(file, targetPath);
             }
         }
+        log.info("子文件移动完成");
     }
 
 
