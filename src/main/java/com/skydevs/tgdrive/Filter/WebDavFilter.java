@@ -38,6 +38,7 @@ public class WebDavFilter implements Filter {
 
             request.getRequestDispatcher(forwardPath).forward(wrapper, servletResponse);
         } else {
+            log.info("{}被过滤", method);
             filterChain.doFilter(request, servletResponse);
         }
     }
