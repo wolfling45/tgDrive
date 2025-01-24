@@ -259,7 +259,7 @@ bot token和chatID不知道如何获取？看[这篇文章](https://skydevs.link
 
 ```caddyfile
 example.com {
-    reverse_proxy /api* localhost:8080 {
+    reverse_proxy /api* localhost:8085 {
         header_up X-Forwarded-Proto {scheme}
         header_up X-Forwarded-Port {server_port}
     }
