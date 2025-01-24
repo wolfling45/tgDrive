@@ -25,6 +25,7 @@
   - [Render 部署](#render-部署)
 - [使用说明](#使用说明)
 - [进阶配置](#进阶配置)
+  - [WebDAV 配置](#webdav-配置)
   - [PicGo 配置](#picgo-配置)
   - [反向代理](#反向代理)
 - [支持与反馈](#支持与反馈)
@@ -38,6 +39,7 @@
 - 🔗 **外链支持**：支持图片外链功能，可直接在浏览器中访问和预览
 - 🖼️ **图床集成**：完美支持 PicGo 图床工具，提供便捷的图片托管服务
 - 🎯 **GIF 优化**：解决 Telegram 自动将 GIF 转换为 MP4 的问题
+- 🌐 **WebDAV 支持**：提供 WebDAV 接口，允许第三方程序进行文件管理和操作，增强文件交互的灵活性
 
 ### 技术特性
 
@@ -45,6 +47,7 @@
 - 🐳 **容器化**：提供 Docker 支持，简化部署和维护流程
 - 💾 **数据持久化**：支持数据持久化存储，确保数据安全
 - 🔄 **API 支持**：提供完整的 RESTful API 接口
+- 🌐 **WebDAV 支持**：提供基本的 WebDAV 接口
 
 ## 快速开始
 
@@ -197,10 +200,42 @@ bot token和chatID不知道如何获取？看[这篇文章](https://skydevs.link
 
 ## 进阶配置
 
+### WebDAV 配置
+
+> [!TIP]
+> 从 v0.0.8 开始支持WebDAV
+
+#### 以 [AList](https://alist.nn.ci) 为例
+
+1. 点击首页的管理：
+
+![07d536381c29ac316f077743eab9c6ff](https://github.com/user-attachments/assets/eecd80be-3ec7-4916-ae73-779aaf09fc58)
+
+2. 存储，添加：
+
+![309722142e517cb0398d2c7a44976317](https://github.com/user-attachments/assets/7834972b-be4c-4307-9baa-8647216c6a42)
+
+3. 驱动选择WebDAV：
+
+![a94e203172604e571bd069f27fa15b9b](https://github.com/user-attachments/assets/419e7f96-e310-4edf-8698-c079dbb4215b)
+
+4. 配置填写：
+
+![e7d28472622282b771914ecb5094386c](https://github.com/user-attachments/assets/fe6efd87-a584-46da-949c-ea8d6dfd1afb)
+
+地址填写：https://your.server.com/webdav
+
+> [!TIP]
+> 若tgdrvie和AList都运行在本地的docker容器里，地址填写http://host.docker.internal:8085/webdav/
+
+用户名和密码：就是tgdrive的管理员账号和密码，默认为：`admin` `123456`，你可以在tgdrive的管理页面更改密码（推荐）
+
+填写完成后点击添加，回到主页，进入你刚刚填写的挂载的文件夹，开始使用吧！
+
 ### PicGo 配置
 
 > [!TIP]
-> 从 v0.0.4+ 开始支持 PicGo。
+> 从 v0.0.4 开始支持 PicGo。
 
 本项目支持结合 [PicGo](https://github.com/Molunerfinn/PicGo) 快速上传图片。
 
