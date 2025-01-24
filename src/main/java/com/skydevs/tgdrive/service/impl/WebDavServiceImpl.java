@@ -77,6 +77,11 @@ public class WebDavServiceImpl implements WebDacService {
             return;
         }
         target = getTargetPath(request, target, sourceFile.isDir());
+        // 如果移动后和移动前路径相同，直接返回
+        if (target.equals(realURI)) {
+            response.setStatus(204);
+            return;
+        }
         FileInfo targetFile = fileMapper.getFileByWebdavPath(target);
         List<FileInfo> subFiles = getSubFiles(realURI);
         sourceFile.setFileName(StringUtil.getDisplayName(target, sourceFile.isDir()));
@@ -172,6 +177,11 @@ public class WebDavServiceImpl implements WebDacService {
             return;
         }
         target = getTargetPath(request, target, sourceFile.isDir());
+        // 如果移动后和移动前路径相同，直接返回
+        if (target.equals(realURI)) {
+            response.setStatus(204);
+            return;
+        }
         FileInfo targetFile = fileMapper.getFileByWebdavPath(target);
         List<FileInfo> subFiles = getSubFiles(realURI);
         sourceFile.setFileName(StringUtil.getDisplayName(target, sourceFile.isDir()));
