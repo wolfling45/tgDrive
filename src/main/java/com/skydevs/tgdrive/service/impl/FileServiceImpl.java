@@ -70,16 +70,37 @@ public class FileServiceImpl implements FileService {
     public String uploadByWebDav(InputStream inputStream, HttpServletRequest request) {
         try {
             String path = StringUtil.getPath(request.getRequestURI());
-            List<FileInfo> fileInfos = fileMapper.getFilesByPathPrefix(path);
-            for (FileInfo fileInfo : fileInfos) {
-                fileMapper.deleteFile(fileInfo.getFileId());
-            }
+
             long size = request.getContentLengthLong();
             if (size < 0) {
                 log.error("无法获取文件大小");
                 throw new FailedToGetSizeException();
             }
             String fileId = botService.uploadFile(inputStream, path, request);
+            List<FileInfo> fileInfos = fileMapper.getFilesByPathPrefix(path);
+            for (FileInfo fileInfo : fileInfos) {
+                fileMapper.deleteFile(fileInfo.getFileId());
+            }
+            // 提取文件夹名字（如果有文件夹的话）
+            List<String> dirPaths = StringUtil.getDirsPathFromPath(path);
+            for (String dirPath : dirPaths) {
+                FileInfo dirInfo = fileMapper.getFileByWebdavPath(dirPath);
+                if (dirInfo != null) {
+                    continue;
+                }
+                dirInfo = FileInfo.builder().fileId("dir")
+                        .fileName(StringUtil.getDisplayName(dirPath, true))
+                        .downloadUrl("dir")
+                        .uploadTime(LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC))
+                        .size("0")
+                        .fullSize(0L)
+                        .webdavPath(dirPath)
+                        .dir(true)
+                        .build();
+                fileMapper.insertFile(dirInfo);
+                log.info("新增文件夹路径{}", dirPath);
+            }
+
             // 从路径中提取文件名
             String fileName = path.substring(path.lastIndexOf('/') + 1);
             FileInfo fileInfo = FileInfo.builder()
