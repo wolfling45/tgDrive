@@ -3,7 +3,7 @@ package com.skydevs.tgdrive.service.impl;
 import com.skydevs.tgdrive.entity.FileInfo;
 import com.skydevs.tgdrive.mapper.FileMapper;
 import com.skydevs.tgdrive.service.FileService;
-import com.skydevs.tgdrive.service.WebDacService;
+import com.skydevs.tgdrive.service.WebDavService;
 import com.skydevs.tgdrive.utils.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,7 +25,7 @@ import static org.apache.catalina.manager.JspHelper.escapeXml;
 @Service
 @Slf4j
 @Transactional
-public class WebDavServiceImpl implements WebDacService {
+public class WebDavServiceImpl implements WebDavService {
 
     @Autowired
     private FileService fileService;

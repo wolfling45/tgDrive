@@ -2,7 +2,7 @@ package com.skydevs.tgdrive.controller;
 
 import com.skydevs.tgdrive.result.Result;
 import com.skydevs.tgdrive.service.FileService;
-import com.skydevs.tgdrive.service.WebDacService;
+import com.skydevs.tgdrive.service.WebDavService;
 import com.skydevs.tgdrive.utils.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,7 +22,7 @@ public class WebDavController {
     @Autowired
     private FileService fileService;
     @Autowired
-    private WebDacService webDacService;
+    private WebDavService webDacService;
 
     /**
      * 上传文件

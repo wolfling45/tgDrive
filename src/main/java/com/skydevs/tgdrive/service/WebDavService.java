@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public interface WebDacService {
+public interface WebDavService {
     /**
      * 选择合适的方法
      * @param request WebDAV请求
