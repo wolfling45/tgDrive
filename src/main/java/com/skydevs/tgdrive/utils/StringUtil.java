@@ -2,6 +2,10 @@ package com.skydevs.tgdrive.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class StringUtil {
     /**
      * 获取前缀
@@ -42,6 +46,35 @@ public class StringUtil {
         } else {
             return path.substring(path.lastIndexOf('/') + 1);
         }
+    }
+
+    /**
+     * 获取路径中的文件夹名字
+     * @param path 路径
+     * @return 文件夹名字数组
+     */
+    public static List<String> getDirsPathFromPath(String path) {
+        String[] paths = path.split("/");
+        // 去掉文件名
+        if (paths.length > 0 && paths[paths.length - 1].contains(".")) {
+            paths = Arrays.copyOf(paths, paths.length - 1);
+        }
+
+        List<String> dirPaths = new ArrayList<>(); // 用于存储每个文件夹的路径
+
+        StringBuilder currentPath = new StringBuilder(); // 拼接路径
+
+        for (String p : paths) {
+            if (p.isEmpty()) {
+                continue;
+            }
+            if (p.contains(".")) {
+                break;
+            }
+            currentPath.append("/" + p);
+            dirPaths.add(currentPath + "/");
+        }
+        return dirPaths;
     }
 
 }
