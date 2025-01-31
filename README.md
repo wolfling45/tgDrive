@@ -259,9 +259,13 @@ bot token和chatID不知道如何获取？看[这篇文章](https://skydevs.link
 
 ```caddyfile
 example.com {
-    reverse_proxy /api* localhost:8080 {
-        header_up X-Forwarded-Proto {scheme}
-        header_up X-Forwarded-Port {server_port}
+    # 启用 HTTPS（Caddy 会自动获取并管理 SSL 证书）
+    reverse_proxy / http://localhost:8085 {
+        # 设置代理头
+        header_up Host {host}                     # 保持客户端原始请求的 Host
+        header_up X-Real-IP {remote}              # 客户端的真实 IP
+        header_up X-Forwarded-For {remote}        # X-Forwarded-For 请求头，标识客户端 IP
+        header_up X-Forwarded-Proto {scheme}      # 客户端的协议（http 或 https）
     }
 }
 ```
