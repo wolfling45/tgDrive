@@ -31,7 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
-
 *.json
-src/main/resources/static/
 *.db
