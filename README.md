@@ -266,12 +266,12 @@ example.com {
         header_up X-Real-IP {remote}              # 客户端的真实 IP
         header_up X-Forwarded-For {remote}        # X-Forwarded-For 请求头，标识客户端 IP
         header_up X-Forwarded-Proto {scheme}      # 客户端的协议（http 或 https）
+        header_up X-Forwarded-Port {port}         # 客户端的端口号
     }
 }
 ```
 
-- `{scheme}`：根据实际请求的协议（HTTP 或 HTTPS）填充。
-- `{server_port}`：自动获取客户端连接的端口（如 443）。
+
 
 #### NGINX 配置
 
@@ -286,6 +286,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Port $server_port;
     }
 }
 ```
