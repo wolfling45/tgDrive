@@ -1,4 +1,4 @@
-# tgDrive - 无限容量和速度的网盘
+![image](https://github.com/user-attachments/assets/c118c1bd-b34e-43c7-977a-e3e50e103fc1)# tgDrive - 无限容量和速度的网盘
 
 <div align="center">
 
@@ -276,6 +276,7 @@ example.com {
 #### NGINX 配置
 
 ```nginx
+
 server {
     listen 443 ssl;
     server_name example.com;
@@ -287,6 +288,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Port $server_port;
+        client_max_body_size 100M ; # 可以设置为你需要上传的文件的最大的大小
     }
 }
 ```
