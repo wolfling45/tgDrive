@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/c118c1bd-b34e-43c7-977a-e3e50e103fc1)# tgDrive - 无限容量和速度的网盘
+# tgDrive - 无限容量和速度的网盘
 
 <div align="center">
 
