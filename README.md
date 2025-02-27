@@ -9,6 +9,7 @@
 ![GitHub forks](https://img.shields.io/github/forks/SkyDependence/tgDrive)
 ![GitHub issues](https://img.shields.io/github/issues/SkyDependence/tgDrive)
 ![GitHub license](https://img.shields.io/github/license/SkyDependence/tgDrive)
+[![tg-qun](https://img.shields.io/static/v1?label=TG%E7%BE%A4&amp;message=TgDrive&amp;color=blue)](https://t.me/+nhHtap9IYbVhOTM1)
 
 </div>
 
