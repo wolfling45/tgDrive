@@ -1,5 +1,6 @@
 package com.skydevs.tgdrive.service.impl;
 
+import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson.JSON;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.File;
@@ -187,6 +188,7 @@ public class BotServiceImpl implements BotService {
                     return fileID;
                 } else {
                     log.warn("正在重试第" + i + "次");
+                    response = bot.execute(sendDocument);
                 }
             }
             throw new NoConnectionException();
@@ -304,7 +306,10 @@ public class BotServiceImpl implements BotService {
         record.setRecordFile(true);
 
         // 创建一个系统临时文件，不依赖特定路径
-        Path tempFile = Files.createTempFile(originalFileName + ".record", ".json");
+        Path tempDir = Files.createTempDirectory("tempDir");
+        String hashString = DigestUtil.sha256Hex(originalFileName);
+        Path tempFile = tempDir.resolve(hashString + ".record.json");
+        Files.createFile(tempFile);
         try {
             String jsonString = JSON.toJSONString(record, true);
             Files.write(Paths.get(tempFile.toUri()), jsonString.getBytes());
