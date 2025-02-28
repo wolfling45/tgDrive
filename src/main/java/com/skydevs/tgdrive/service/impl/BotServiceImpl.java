@@ -188,6 +188,7 @@ public class BotServiceImpl implements BotService {
                     return fileID;
                 } else {
                     log.warn("正在重试第" + i + "次");
+                    response = bot.execute(sendDocument);
                 }
             }
             throw new NoConnectionException();
