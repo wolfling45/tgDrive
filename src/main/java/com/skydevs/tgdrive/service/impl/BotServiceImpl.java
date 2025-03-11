@@ -176,25 +176,64 @@ public class BotServiceImpl implements BotService {
      */
     private String uploadChunk(byte[] chunkData, String partName) {
         SendDocument sendDocument = new SendDocument(chatId, chunkData).fileName(partName);
-        try {
-            SendResponse response = bot.execute(sendDocument);
+        int retryCount = 3;
+        int baseDelay = 1000; // 基础延迟时间（毫秒）
 
-            int retryCount = 3;
-            for (int i = 1; i <= retryCount; i++) {
+        for (int i = 0; i < retryCount; i++) {
+            try {
+                SendResponse response = bot.execute(sendDocument);
+
                 // 检查响应
-                if (response.isOk() && response.message() != null && (response.message().document() != null || response.message().sticker() != null)) {
-                    String fileID = response.message().document().fileId() != null ? response.message().document().fileId() : response.message().sticker().fileId();
-                    log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
-                    return fileID;
-                } else {
-                    log.warn("正在重试第" + i + "次");
-                    response = bot.execute(sendDocument);
+                if (response != null && response.isOk() && response.message() != null) {
+                    // 安全地获取fileId
+                    String fileID = null;
+                    if (response.message().document() != null) {
+                        fileID = response.message().document().fileId();
+                    } else if (response.message().sticker() != null) {
+                        fileID = response.message().sticker().fileId();
+                    }
+
+                    if (fileID != null) {
+                        log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
+                        return fileID;
+                    }
+                }
+
+                // 如果到这里，说明上传没有成功，需要重试
+                int exponentialDelay = baseDelay * (int)Math.pow(2, i); // 指数退避策略
+                log.warn("上传失败，正在准备第{}次重试，等待{}毫秒", (i+1), exponentialDelay);
+                Thread.sleep(exponentialDelay);
+
+            } catch (NullPointerException e) {
+                log.error("Bot未设置或其他空指针异常", e);
+                throw new BotNotSetException("上传过程中发生空指针异常");
+            } catch (InterruptedException e) {
+                log.error("线程被中断", e);
+                Thread.currentThread().interrupt(); // 重置中断状态
+                throw new RuntimeException("上传过程被中断", e);
+            } catch (Exception e) {
+                // 捕获所有其他异常
+                log.error("上传过程中发生未预期的异常: {}", e.getMessage(), e);
+
+                try {
+                    int exponentialDelay = baseDelay * (int)Math.pow(2, i); // 指数退避策略
+                    log.warn("发生异常，正在准备第{}次重试，等待{}毫秒", (i+1), exponentialDelay);
+                    Thread.sleep(exponentialDelay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("重试等待被中断", ie);
+                }
+
+                // 如果是最后一次重试，则抛出异常
+                if (i == retryCount - 1) {
+                    throw new RuntimeException("上传失败，已达到最大重试次数", e);
                 }
             }
-            throw new NoConnectionException();
-        }catch (NullPointerException e) {
-            throw new BotNotSetException();
         }
+
+        // 如果所有重试都失败
+        log.error("分块上传失败，已重试{}次，文件名：{}", retryCount, partName);
+        throw new NoConnectionException("无法上传文件分块，已达到最大重试次数");
     }
 
     /**
