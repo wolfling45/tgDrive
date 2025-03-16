@@ -41,7 +41,8 @@ public class BackupController {
     public Result<String> uploadBackupDb(@RequestParam MultipartFile multipartFile) {
         try {
             backupService.loadBackupDb(multipartFile);
-            return Result.success();
+            log.info("数据库恢复成功");
+            return Result.success("数据库恢复成功");
         } catch (Exception e) {
             log.error("恢复数据库失败");
             return Result.error("恢复数据库失败");
