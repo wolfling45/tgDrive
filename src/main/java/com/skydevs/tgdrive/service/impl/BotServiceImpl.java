@@ -186,13 +186,8 @@ public class BotServiceImpl implements BotService {
                 // 检查响应
                 if (response != null && response.isOk() && response.message() != null) {
                     // 安全地获取fileId
-                    String fileID = null;
-                    if (response.message().document() != null) {
-                        fileID = response.message().document().fileId();
-                    } else if (response.message().sticker() != null) {
-                        fileID = response.message().sticker().fileId();
-                    }
-
+                    String fileID;
+                    fileID = extractFileId(response.message());
                     if (fileID != null) {
                         log.info("分块上传成功，File ID：{}， 文件名：{}", fileID, partName);
                         return fileID;
@@ -234,6 +229,33 @@ public class BotServiceImpl implements BotService {
         // 如果所有重试都失败
         log.error("分块上传失败，已重试{}次，文件名：{}", retryCount, partName);
         throw new NoConnectionException("无法上传文件分块，已达到最大重试次数");
+    }
+
+    public String extractFileId(Message message) {
+        if (message == null) {
+            return null;
+        }
+
+        // 按优先级检查可能的文件类型
+        if (message.document() != null) {
+            return message.document().fileId();
+        } else if (message.sticker() != null) {
+            return message.sticker().fileId();
+        } else if (message.video() != null) {
+            return message.video().fileId();
+        } else if (message.photo() != null && message.photo().length > 0) {
+            return message.photo()[message.photo().length - 1].fileId(); // 取最后一张（通常是最高分辨率）
+        } else if (message.audio() != null) {
+            return message.audio().fileId();
+        } else if (message.animation() != null) {
+            return message.animation().fileId();
+        } else if (message.voice() != null) {
+            return message.voice().fileId();
+        } else if (message.videoNote() != null) {
+            return message.videoNote().fileId();
+        }
+
+        return null; // 没有找到 fileId
     }
 
     /**
