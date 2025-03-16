@@ -1,22 +1,27 @@
 package com.skydevs.tgdrive.controller;
 
+import com.skydevs.tgdrive.result.Result;
+import com.skydevs.tgdrive.service.BackupService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/backup")
+@Slf4j
 public class BackupController {
 
     private static final String DATABASE_PATH = "db/tgDrive.db"; // SQLite 文件路径
+    @javax.annotation.Resource
+    private BackupService backupService;
 
     @GetMapping("/download")
     public ResponseEntity<Resource> downloadBackup() throws IOException {
@@ -31,4 +36,15 @@ public class BackupController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
     }
+
+    @PostMapping("/upload")
+    public Result<String> uploadBackupDb(@RequestParam MultipartFile multipartFile) {
+        try {
+            backupService.loadBackupDb(multipartFile);
+            return Result.success();
+        } catch (Exception e) {
+            log.error("恢复数据库失败");
+            return Result.error("恢复数据库失败");
+        }
+   }
 }
