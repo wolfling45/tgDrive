@@ -23,7 +23,7 @@ public interface FileMapper {
     @Select("SELECT * FROM files order by upload_time desc ")
     Page<FileInfo> getAllFiles();
 
-    @Select("SELECT file_name FROM files where file_id = #{fileId} AND webdav_path != 'deleted' LIMIT 1")
+    @Select("SELECT file_name FROM files where file_id = #{fileId} AND (webdav_path IS NULL OR webdav_path != 'deleted') LIMIT 1")
     String getFileNameByFileId(String fileId);
 
     @Select("SELECT full_size FROM files where file_id = #{fileId} LIMIT 1")
