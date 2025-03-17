@@ -13,7 +13,7 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 
 @Service
-public class IBackupService implements BackupService {
+public class BackupServiceImpl implements BackupService {
 
     private static final String BACKEND_DB_PATH = "jdbc:sqlite:db/tgDrive.db"; // 后端数据库路径
     private static final String BACKUP_DB_PATH = "db/tgdrive_backup.db"; // 备份路径
