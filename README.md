@@ -108,6 +108,8 @@ docker run -d -p 8085:8085 --name tgdrive --restart always nanyangzesi/tgdrive:l
 ```
 
 #### 迁移之前的数据
+> [!TIP]
+> 0.0.9版本开始，您可以直接在管理界面进行下载数据库和恢复数据库中的文件数据
 
 如果您已经运行过项目，并在容器内生成了数据库文件，可以将这些数据手动迁移到主机的持久化目录中：
 
@@ -186,6 +188,8 @@ docker run -d -p 8085:8085 --name tgdrive --restart always nanyangzesi/tgdrive:l
 ## 使用说明
 
 访问你部署项目的网址后，会出现如下页面：
+> [!TIP]
+> 0.0.9版本开始，所有页面都需要登入，不同的是，分为管理员账号和游客账号，游客只能进入上传页面，游客账号visitor，密码111111
 
 ![主页](https://github.com/user-attachments/assets/ede633bb-053a-49e4-ab2b-faff3c688c77)
 
