@@ -50,12 +50,13 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 修改密码
+     *
      * @param changePasswordRequest 新老密码
      */
     @Override
-    public void changePassword(long id, ChangePasswordRequest changePasswordRequest) {
+    public void changePassword(ChangePasswordRequest changePasswordRequest) {
         // 查找用户
-        User user = userMapper.getUserById(id);
+        User user = userMapper.getUserByUsername(changePasswordRequest.getUsername());
 
         if (user == null) {
             throw new UserNotFoundException();
@@ -69,6 +70,6 @@ public class UserServiceImpl implements UserService {
 
         // 更新密码
         String newPassword = DigestUtils.md5DigestAsHex(changePasswordRequest.getNewPassword().getBytes());
-        userMapper.updatePassword(id, newPassword);
+        userMapper.updatePassword(user.getId(), newPassword);
     }
 }

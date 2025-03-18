@@ -51,9 +51,9 @@ public class UserController {
     public Result<String> changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
         long userId = StpUtil.getLoginIdAsLong();
 
-        userService.changePassword(userId, changePasswordRequest);
+        userService.changePassword(changePasswordRequest);
 
-        log.info(userId + "密码修改成功");
+        log.info(userId + "密码修改" + changePasswordRequest.getUsername() + "成功");
         return Result.success("密码修改成功");
     }
 }

@@ -15,7 +15,8 @@ public interface UserService {
 
     /**
      * 修改密码
+     *
      * @param changePasswordRequest 新老密码
      */
-    void changePassword(long id, ChangePasswordRequest changePasswordRequest);
+    void changePassword(ChangePasswordRequest changePasswordRequest);
 }
