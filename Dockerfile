@@ -1,5 +1,5 @@
 # 设置基础镜像
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21
 
 # 设置工作目录为 /app
 WORKDIR /app
