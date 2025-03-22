@@ -31,4 +31,4 @@ jobs:
         with:
           platforms: linux/arm64,linux/amd64
           push: true
-          tags: wolfling/tdDrive:latest
+          tags: wolfling/tgdrive:latest
